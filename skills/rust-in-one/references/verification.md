@@ -1,29 +1,71 @@
-# Verification and review
+# Verification, review, and delivery
 
-## Choose checks from requirements
+Read this when planning verification for substantial work, preparing an independent review, or deciding whether a result is ready to deliver.
 
-For each important behavior, choose evidence that could reveal a plausible wrong implementation. Reuse existing checks when they still apply. Match additional verification to the product:
+## Map requirements to evidence
 
-| Product concern | Useful checks |
+For each item on the requirements checklist, pick evidence that would fail if the implementation were plausibly wrong. A test that only exercises the happy path of the code you just wrote is weak evidence. Reuse existing checks where they still apply.
+
+| Product | Checks that usually matter |
 | --- | --- |
-| CLI behavior | Real process execution, output and exit status, malformed input, interrupted work |
-| Library/API | An external consumer, examples, error behavior, supported features and targets |
-| Service or concurrent work | Cancellation, shutdown, bounded resources, failure propagation, relevant interleavings |
-| Persistence | Partial writes, recovery, and durability expectations on the intended platform |
-| Performance | Representative release workloads, result quality, latency, throughput, and memory |
+| CLI | Run the built binary: stdout and stderr kept separate, exit codes, stdin and `-`, `tool \| head -1` without a panic, missing and unreadable files, a directory passed as a file, empty and non-UTF-8 input, large input (time and peak memory, streaming rather than loading), `--help` matching the README |
+| Library | Integration tests in `tests/` that use only the public API; examples that compile and run; doctests; error types are `Send + Sync + 'static`; public types have the intended `Send`/`Sync`; feature combinations; documentation builds without warnings |
+| Service | Real requests to a server bound to `127.0.0.1:0`: malformed and oversized requests, request size limits and timeouts, dependency failures, graceful shutdown with in-flight requests, configuration errors at startup |
+| Concurrent code | Shutdown and cancellation paths, error propagation from tasks and threads, bounded queues under load, repeated runs to expose flakiness; `loom` for custom lock-free or atomic protocols |
+| Persistence | Interrupted writes (write to a temporary file, `sync_all`, rename), recovery on restart, behavior when the file is from an older or newer version, concurrent access if possible |
+| Parsers and decoders of untrusted input | Property tests (`proptest`) for round trips and invariants; fuzzing (`cargo fuzz`, nightly) for crash-freedom; explicit tests for limits on nesting, length, and allocation |
+| Performance requirements | See [performance.md](performance.md) |
 
-Select Cargo targets and features intentionally. Exercise eligible doctests separately where the chosen test command omits them; `--all-targets` does not include doctests. Compilation across features does not establish their behavior. See the [Cargo test documentation](https://doc.rust-lang.org/cargo/commands/cargo-test.html).
+## Commands worth knowing
 
-For unsafe code, examine validity, aliasing, lifetimes, synchronization, and obligations exposed to callers. Prefer a requirement-preserving safe alternative when it resolves uncertainty at reasonable cost. A smaller unsafe block is not necessarily a smaller safety obligation. Use tools such as [Miri](https://github.com/rust-lang/miri) where applicable, while retaining source-level reasoning about untested inputs and executions.
+```sh
+cargo test --workspace --all-features            # includes doctests
+cargo test --doc                                 # doctests only; --all-targets skips them
+cargo test --no-default-features                 # when the crate supports it
+RUSTDOCFLAGS="-D warnings" cargo doc --no-deps   # broken intra-doc links, missing docs if linted
+cargo build --release && ./target/release/<bin>  # the artifact users run
+cargo install --path . --root "$(mktemp -d)"     # install as a user would, then run it from there
+cargo package --list                             # files a published crate will contain
+cargo package                                    # builds the crate from its packaged contents
+cargo tree --duplicates                          # duplicate dependency versions
+```
 
-## Review independently
+Use optional tools when they are installed or the project already uses them, and do not report them as run otherwise: `cargo semver-checks` before releasing a library, `cargo audit` or `cargo deny` for advisories and licenses, `cargo +nightly miri test` for unsafe code (see [unsafe-ffi.md](unsafe-ffi.md)), `cargo hack --feature-powerset check` for feature combinations, and `cargo msrv verify` or `cargo +<msrv> check` for a declared `rust-version`.
 
-For substantial or risky work, give an independent reviewer the requirements and a fixed artifact, without treating the author's conclusions as an answer key. Use fresh review context where available. Prevent author-specific continuation instructions from automatically directing the review; a separate worktree alone does not reset shared host state.
+Compiling across feature combinations does not test their behavior. A passing `cargo check` on another target does not show the program works there.
 
-Prefer a reproducer, but also accept a concrete source-level counterexample or violated invariant. Close findings with evidence that the cause was corrected or the premise was false. Escalate unresolved material disputes when needed; additional favorable votes do not resolve them. Recheck relevant risks after integrating corrections.
+## Test design notes
 
-## Check delivery
+- Put unit tests next to the code (`#[cfg(test)] mod tests`) for internal logic and integration tests in `tests/` for the public surface. Integration tests compile as separate crates and see only public items.
+- Use `tempfile::TempDir` for filesystem tests. Never write into the source tree or depend on the current directory.
+- For complex textual output, golden files or snapshot tests (`insta`) catch regressions. Review every snapshot update rather than accepting it blindly.
+- For time-dependent async code, use `#[tokio::test(start_paused = true)]` with `tokio::time` instead of real sleeps.
+- A test that never failed is not evidence. When adding a regression test for a defect, confirm it fails without the fix.
 
-Test from the actual package, clean consumer, or distributable binary rather than relying solely on the development tree. Verify included files, required assets, configuration, and necessary usage instructions.
+## Independent review
 
-Record significant checks and their results against the delivered revision. Keep unrun checks and unresolved findings visible. Preserve useful diagnostics outside the shipped artifact when appropriate. Do not turn evidence collection into a second documentation project.
+Give the reviewer:
+- the user's original request and the requirements checklist, including accepted assumptions;
+- the artifact: repository path and commit, or the diff, plus build and run commands;
+- the risk areas of the product, such as untrusted input, unsafe code, concurrency, and compatibility commitments. These describe the product, not your conclusions about it.
+
+Do not give the reviewer your own verdict, your summary of which tests pass as a reason to trust the code, continuation notes, or a list of areas already checked. Ask for findings in this form:
+
+```text
+[severity: critical/high/medium/low] <title>
+Where: <file:line or component>
+Requirement or invariant violated: <...>
+Evidence: <reproducer, failing input, or concrete code path>
+Suggested direction: <optional>
+```
+
+Close each finding with evidence: a test that failed before the fix and passes after it, or a demonstration that the premise is false. If you and the reviewer still disagree about a material finding, report both positions to the user. After fixes, rerun the full checks and recheck the integrated artifact, not just the patched lines.
+
+## Delivery checks
+
+- The requirements checklist is satisfied, or each gap is stated.
+- Final checks pass on the final revision. Rerun them after the last edit, including documentation edits that touch doctests.
+- The delivered artifact works from a clean location: installed binary, packaged crate (`cargo package`), or container/service configuration.
+- Every command and example in the README was actually run.
+- `git status` and `cargo package --list` (for crates) show no scratch files, notes, logs, generated test data, or secrets.
+- The report distinguishes checks that ran from checks that were not possible here, such as missing tools, platforms, or credentials.
