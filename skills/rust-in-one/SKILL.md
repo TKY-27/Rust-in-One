@@ -8,17 +8,19 @@ license: MIT
 
 Deliver the requested behavior with defensible Rust engineering decisions and evidence from the artifact users receive. Follow the user's scope and the host's permissions and repository instructions. Reuse planning, verification, and review supplied by the host or another skill; do not duplicate valid work for the same revision.
 
+Files under `references/` in this skill's directory are not loaded with this file. When a trigger below applies, open that file with your file-reading tool before relying on it. If a reference file cannot be read, report that limitation and consult relevant primary documentation.
+
 ## Choose the scope and checks
 
 - **New project or substantial feature:** identify the observable requirements, build one real end-to-end path, then expand and verify it.
-- **Migration:** first read [migration.md](references/migration.md). Establish the source behavior and performance baseline before designing the Rust replacement. A wrapper is not a native migration unless the user requested one.
+- **Migration:** first open [migration.md](references/migration.md) and follow it. Establish the source behavior and performance baseline before designing the Rust replacement. A wrapper is not a native migration unless the user requested one.
 - **Focused fix:** inspect the affected code and tests, reproduce the defect, make the smallest coherent correction, and run relevant checks. No planning document or extra reviewer by default. Escalate review when the *changed behavior* has material safety, security, concurrency, persistence, or compatibility risk.
 
 Read applicable repository instructions and, where present, Cargo manifests, toolchain pins, and CI configuration. Preserve the edition, MSRV, features, conventions, and unrelated working-tree changes. Run relevant baseline checks in existing projects; distinguish pre-existing failures from regressions. For a new project, check the available toolchain and choose a supported edition and layout.
 
 Write a short requirements checklist (the task contract) covering observable behavior and constraints: inputs, outputs, failure behavior, public interfaces, platforms, and any resource constraints. Resolve routine technical choices yourself. Ask only when an unresolved product choice materially changes the result and has no reasonable default. Do not silently reduce scope.
 
-For substantial work, read the relevant product row and checks in [verification.md](references/verification.md) **while planning the first working path**, not only at delivery. Read additional references at their triggers below, and reassess those triggers when the design changes: an initially safe rewrite can acquire an FFI boundary. Markdown links do not preload reference files: open the needed reference file before relying on it. If a reference file cannot be read, report that limitation and consult relevant primary documentation.
+For substantial work, read the relevant product row and checks in [verification.md](references/verification.md) **while planning the first working path**, not only at delivery. Read additional references at their triggers below, and reassess those triggers when the design changes: an initially safe rewrite can acquire an FFI boundary.
 
 ## Build a real path early
 
