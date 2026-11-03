@@ -50,21 +50,22 @@ Give the reviewer:
 - the artifact: repository path and commit, or the diff, plus build and run commands;
 - the risk areas of the product, such as untrusted input, unsafe code, concurrency, and compatibility commitments. These describe the product, not your conclusions about it.
 
-Do not give the reviewer your own verdict, your summary of which tests pass as a reason to trust the code, continuation notes, or a list of areas already checked. Ask for findings in this form:
+Do not give the reviewer your own verdict, your summary of which tests pass as a reason to trust the code, continuation notes, or a list of areas already checked. Ask for defects first, then a proportionate maintainability assessment: code whose names, return values, control flow, module boundaries, duplication, or abstractions would make the next change slow or error-prone. Ask for findings in this form:
 
 ```text
-[severity: critical/high/medium/low] <title>
+[severity: critical/high/medium/low] [defect|maintainability] <title>
 Where: <file:line or component>
-Requirement or invariant violated: <...>
-Evidence: <reproducer, failing input, or concrete code path>
+Requirement, invariant, or maintenance cost: <...>
+Evidence: <reproducer, failing input, concrete code path, or the change it would complicate>
 Suggested direction: <optional>
 ```
 
-For a confirmed finding, explain how the fix restores the violated requirement or invariant and add a regression check where feasible. Reject a finding only with evidence that its premise is false. If you and the reviewer still disagree about a material finding, report both positions to the user. After fixes, rerun checks affected by the change and recheck the integrated artifact. Repeat wider checks when integration risk or repository policy warrants it.
+Check each premise before reporting or acting on it. For example, an ignored `fmt::Result` from formatting integers into a `String` is not an ignored I/O error, and `process::exit` called after `run()` returns does not skip destructors that already ran inside `run()`. Maintainability findings are judgments; weigh them against the cost and risk of changing working code, and do not let a restructuring change behavior outside the request. For a confirmed defect, explain how the fix restores the violated requirement or invariant and add a regression check where feasible. Reject a finding only with evidence that its premise is false. If you and the reviewer still disagree about a material finding, report both positions to the user. After fixes, rerun checks affected by the change and recheck the integrated artifact. Repeat wider checks when integration risk or repository policy warrants it.
 
 ## Delivery checks
 
 - The requirements checklist is satisfied, or each gap is stated.
+- Each feature is wired into the delivered interface; no placeholder, duplicate, or unreachable implementation remains.
 - Final checks pass on the final revision, with affected checks (including doctests when examples change) rerun after the last edit.
 - The delivered artifact works from a clean location: installed binary, packaged crate (`cargo package`), or container/service configuration.
 - Applicable README commands and examples were run; platform-specific or unavailable deployment steps are clearly marked unverified.
