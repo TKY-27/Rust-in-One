@@ -1,123 +1,74 @@
 ---
 name: rust-in-one
-description: Engineering workflow and Rust-specific defaults for delivering complete, verified Rust software from a short request. Use when the user wants to build a new Rust program, library, or service (including before any Cargo.toml exists); extend, fix, review, optimize, or finish an existing Rust codebase; or migrate C, C++, or other code to Rust. Also use for the Rust parts of mixed-language repositories and when resuming long Rust work after a context reset. Do not use when no Rust is involved, and do not choose Rust for a request whose language is undecided just because this skill is available.
+description: Build and verify new Rust CLIs, libraries, and services; migrate C/C++ or other software to Rust with explicit compatibility and performance checks; fix, extend, review, or optimize existing Rust code. Applies before Cargo.toml exists and when resuming Rust work. Use only for Rust work, including Rust components of mixed repositories. Do not choose Rust merely because this skill is available when the language is undecided.
 license: MIT
 ---
 
 # Rust-in-One
 
-Deliver the Rust software the user asked for: working, verified, and built from decisions an experienced Rust engineer would defend. You own the technical decisions; the user owns the product scope.
+Deliver the requested behavior with defensible Rust engineering decisions and evidence from the artifact users receive. Follow the user's scope and the host's permissions and repository instructions. Reuse planning, verification, and review supplied by the host or another skill; do not duplicate valid work for the same revision.
 
-## Scale the process to the task
+## Choose the scope and checks
 
-- **Small change** (bug fix, small feature, review comment): read the affected code and its tests, fix the cause, add or adjust a test, run the project's checks, report. Skip planning documents, continuation notes, and independent review unless the change touches unsafe code, concurrency, security-sensitive input handling, a public API, or a persisted format.
-- **New project or substantial feature**: follow every section below.
-- **Migration to Rust**: follow every section below, and open [references/migration.md](references/migration.md) before studying the source in detail. It defines the contract inventory, the differential testing against the original build, and the C/C++ semantic traps that drive the work.
+- **New project or substantial feature:** identify the observable requirements, build one real end-to-end path, then expand and verify it.
+- **Migration:** first read [migration.md](references/migration.md). Establish the source behavior and performance baseline before designing the Rust replacement. A wrapper is not a native migration unless the user requested one.
+- **Focused fix:** inspect the affected code and tests, reproduce the defect, make the smallest coherent correction, and run relevant checks. No planning document or extra reviewer by default. Escalate review when the *changed behavior* has material safety, security, concurrency, persistence, or compatibility risk.
 
-If the user has not chosen a language, this skill does not choose it. Pick the language from the product's needs and the user's environment; continue with this skill only if that is Rust. In a mixed-language repository, apply it only to the Rust parts.
+Read existing instructions, Cargo manifests, toolchain pins, and CI. Preserve edition, MSRV, features, conventions, and unrelated edits. Run relevant baseline checks in existing projects; distinguish pre-existing failures from regressions. For a new project, check the available toolchain and choose a supported edition and layout.
 
-Follow the host's permissions and instruction files (AGENTS.md, CLAUDE.md, CONTRIBUTING, CI configuration). Where the host or another skill already provides planning, task tracking, review, or verification, use that instead of duplicating it, and reuse its valid evidence for the same revision.
+Write a short observable checklist: inputs, outputs, failure behavior, public interfaces, platforms, and any resource constraints. Resolve routine technical choices yourself. Ask only when an unresolved product choice materially changes the result and has no reasonable default. Do not silently reduce scope.
 
-## 1. Pin down the product
+For substantial work, read the relevant product row and checks in [verification.md](references/verification.md) **while planning the first working path**, not only at delivery. Read additional references at their triggers below, and reassess those triggers when the design changes: an initially safe rewrite can acquire an FFI boundary. A link in this file is not loaded reference content: open the relevant file before relying on it; if unavailable, report that limit and use primary documentation.
 
-Before designing, read the request, the repository's instructions, `Cargo.toml` (edition, `rust-version`, features, workspace), `rust-toolchain.toml`, the existing code, tests, and CI. Then establish:
+## Build a real path early
 
-- Who uses the result and how: CLI, library, service, embedded component, or part of a larger system.
-- Inputs and their trust level, outputs and their consumers, and which formats, interfaces, and behaviors are compatibility commitments.
-- Target platforms, scale, and any performance, memory, or latency requirements.
-- What must happen on bad input, missing resources, partial failure, and interruption.
+Exercise a real CLI input/output, a library call from outside the crate, or a request through the service's actual transport. Test risky assumptions early: format details, external API usability, dependency capabilities, cancellation, and performance feasibility. Add breadth in buildable increments.
 
-Turn these answers into a short checklist of observable requirements. Verification and review are checked against it, so keep it in your working state.
+Choose the smallest useful design:
 
-In an existing project, build it and run its checks before changing anything. Note pre-existing failures and warnings so you neither hide them nor mistake them for regressions. Follow its conventions (error crates, layout, test style, MSRV), and keep unrelated reformatting and refactoring out of the diff. When asked to finish or improve it, list what is incomplete: `todo!`/`unimplemented!`/TODO markers, failing or ignored tests, README claims the code does not meet, and unhandled error paths.
+- Use `cargo new` / `cargo init` when appropriate. Keep a lockfile for reproducible development; published library consumers resolve their own dependency graph. Set and verify `rust-version` when promising an MSRV. Do not change existing compatibility policy incidentally.
+- Separate reusable logic from CLI wiring when it improves testing or reuse; a small binary need not have a library target. Use workspaces for genuinely separate crates.
+- Verify dependency versions and features through Cargo, the existing lockfile, or registry/docs; `cargo add` is convenient, not mandatory. Read docs or source for the resolved version when uncertain. Respect offline and vendored builds.
+- Prefer private items, borrow inputs when useful, and choose owned results or borrowed views according to lifetime and allocation needs. Use enums and validating constructors for meaningful invariants; avoid abstractions for hypothetical needs.
+- Before cloning to satisfy the borrow checker, consider smaller borrow scopes, splitting fields, or indices into an arena. Shared ownership and locks are legitimate when the design needs them.
+- Treat public types as API decisions. `#[non_exhaustive]` permits evolution but restricts downstream construction and exhaustive matching; provide constructors/accessors and test a separate consumer. Add traits such as `Debug`, `Clone`, or `Default` only when their semantics fit.
+- Return useful errors. Libraries normally return errors rather than printing or exiting; typed errors are useful when callers need to distinguish cases. Applications may use `anyhow` or simpler errors. Attach operation/input context at boundaries. Invalid input and I/O failures are not reasons to panic.
 
-Resolve ordinary technical choices yourself: crates, layout, error strategy, test approach. Ask only when an unanswered product question would materially change the result and has no reasonable default, or when an action exceeds your authorization. Otherwise state the assumption and proceed. Do not shrink the requested scope silently.
+## Rust pitfalls to check
 
-## 2. Make one real path work early
+- **Observable order:** hash collection iteration is unspecified. Sort when deterministic output is required; define tie behavior where it affects results. Do not add a new tie-breaker that changes a compatibility contract.
+- **Bytes and text:** `String` requires UTF-8; files, process output, and paths may not. Decide whether to reject, preserve, or transform invalid bytes. Use `Path`/`OsStr` for paths. String length is bytes and slicing requires character boundaries.
+- **Arithmetic:** default Cargo profiles check ordinary integer overflow in debug and wrap in release, but flags can change this; division/remainder by zero and signed MIN / -1 still panic. Use checked, saturating, or wrapping operations to express the required behavior. Validate narrowing conversions with `TryFrom`; choose count/offset widths from the format and platform contract. Define a NaN policy before ordering floats (`total_cmp` provides a total order).
+- **CLI output:** propagate write and explicit `flush()` failures; `BufWriter` drop ignores them. For ordinary filter CLIs, handle `BrokenPipe` without a panic. A migration must match its source's output/error/status contract. Return a deliberate exit status and readable stderr; `Result` from `main` prints errors with `Debug`, and `process::exit` skips destructors.
+- **Global state:** tests run concurrently. Prefer injected configuration or subprocess tests over mutating environment/current directory in-process. Edition 2024 makes `std::env::set_var`/`remove_var` unsafe; a test mutex alone does not constrain other threads or foreign code.
+- **Crates:** use maintained parsers and cryptography rather than inventing them. Common options include `clap`, `serde`, `thiserror`/`anyhow`, `tokio`, `axum`, `reqwest`, `tracing`, and `rayon`; choose only what the product warrants. Enable needed features. Prefer std facilities such as `OnceLock`/`LazyLock` when they cover the need and MSRV.
 
-Build the thinnest end-to-end path through a real boundary before adding breadth: the CLI processing a real input file and printing real output; an integration test calling the library's public API the way a consumer would; a service answering a real request through its router. Spike risky assumptions first, such as format details, a crate's actual capabilities, or feasibility of a performance target. Then grow in increments that each keep the build green and add tests.
+Before writing a service, async code, or nontrivial multithreading, read [concurrency.md](references/concurrency.md). Choose sync, threads, or async from the workload; specify limits and shutdown/cancellation behavior before spawning work.
 
-## 3. Engineering defaults
+Before writing or changing unsafe code or FFI, read [unsafe-ffi.md](references/unsafe-ffi.md). Keep the boundary narrow, document the safety obligations, and use safe alternatives where they meet the requirements.
 
-Deviate when the project's conventions or a stated requirement say otherwise.
+Before optimizing, benchmarking, or claiming speed/memory improvements, read [performance.md](references/performance.md). Measure a correct optimized artifact against a defined baseline, workload, and acceptance threshold. Streaming and buffer reuse help where input size or profiling justifies them.
 
-**Project setup**
-- Check `cargo --version` first. If no toolchain is installed, install one through rustup when you are authorized to; otherwise say that builds and checks could not run. Never present unbuilt code as working.
-- Create crates with `cargo new` / `cargo init`. Current Cargo defaults to edition 2024 and no longer ignores `Cargo.lock`; keep the edition and commit the lockfile. Edition 2024 requires `unsafe extern` blocks and `#[unsafe(no_mangle)]`, makes `std::env::set_var` unsafe, and reserves `gen`.
-- Add dependencies with `cargo add name [-F feature]` so versions are real. Do not write version numbers or feature names from memory. When unsure of an API, or when a compile error suggests a different major version, read the docs for the locked version: docs.rs, or the crate source under `~/.cargo/registry/src/`.
-- A binary with real logic gets a library target: modules under `src/lib.rs`, with `src/main.rs` limited to argument parsing, wiring, and exit codes. Use a workspace only for crates with genuinely separate roles.
-- Put lint settings in the `[lints]` table. Set `rust-version` only for crates others will build, and verify it.
+## Verify and review
 
-**Types and ownership**
-- Model the domain with types: enums for closed sets of states instead of flag combinations or strings, newtypes for identifiers and units, and validating constructors at input boundaries so inner code can rely on invariants.
-- Long-lived structs own their data. Functions borrow (`&str`, `&[T]`, `&Path`) and return owned values. Put lifetimes on structs only for short-lived views or zero-copy parsing that pays for itself.
-- When fighting the borrow checker, restructure before cloning: split borrows, separate data from behavior, or store indices into a `Vec` instead of references (graphs, parent links, caches). `Rc<RefCell<_>>` webs and blanket `Arc<Mutex<_>>` usually mean ownership was never designed.
-- Keep visibility minimal (`pub(crate)` by default). Do not add traits, generics, builders, or configuration for hypothetical future needs.
-- In libraries every public item is a compatibility commitment. Expose dependency types only deliberately, mark public enums and structs that may grow `#[non_exhaustive]`, and implement the common traits (`Debug`, `Clone`, `PartialEq`, `Default`) where they make sense.
-
-**Gotchas that commonly produce wrong programs**
-- `HashMap`/`HashSet` iteration order is randomized per process. Wherever order is observable (output, serialization, tests, hashing), use `BTreeMap`, sort explicitly, or use an insertion-ordered map. Give every sort an explicit tie-breaker.
-- `String` must be UTF-8; files, logs, process output, and paths need not be. `read_to_string` fails on invalid UTF-8, and `BufRead::lines()` yields an `Err` for such a line, so `?` aborts the whole run. Decide the policy (bytes, lossy, skip and count, or error) and use `Path`/`OsStr` for file names. String slicing panics off a char boundary, and `len()` counts bytes.
-- Integer overflow panics in debug builds and silently wraps in release builds. Use `checked_*`, `saturating_*`, or wider types where input controls magnitudes (sizes, offsets, counts, durations); use `u64`, not `usize`, for byte totals. `as` silently truncates or saturates, so use `TryFrom` for narrowing untrusted values. Sort floats with `total_cmp`.
-- Rust ignores SIGPIPE, so `println!` panics when the reader goes away (`tool | head`). CLIs that write substantial output should write through `BufWriter::new(io::stdout().lock())`, propagate write errors, and treat `ErrorKind::BrokenPipe` as a normal exit; a drop-in replacement for an existing tool should match that tool's status instead (see [references/migration.md](references/migration.md)). Call `flush()` explicitly, because `BufWriter` ignores errors on drop. `std::process::exit` skips destructors and loses unflushed output, so return `ExitCode` from `main` instead.
-- Returning `Err` from `main` prints the error's `Debug` form and exits with status 1. That reads acceptably for `anyhow::Error` but badly for derived `Debug` output. User-facing CLIs should print a clear message to stderr and choose exit codes deliberately.
-- Tests run in parallel threads of one process. Tests that change environment variables, the current directory, or other global state interfere with each other, so pass configuration explicitly instead.
-- `std::sync::LazyLock`/`OnceLock` replace `lazy_static`/`once_cell`. Prefer std where it covers the need.
-
-**Errors and panics**
-- Libraries expose their own error type (an enum implementing `std::error::Error`, usually via `thiserror`, `#[non_exhaustive]` if it may grow) and never print or exit. Applications use `anyhow` (or an equivalent) and attach context naming the operation and input (path, line, URL) at each boundary.
-- Panics are for bugs. Bad input, I/O failure, and network errors are `Result`s. No `unwrap()` on input-controlled values; `expect("why this cannot fail")` documents a real invariant.
-
-**Dependencies**
-- Default choices when a crate is warranted: `clap` (derive) for nontrivial CLIs, `serde`/`serde_json` for serialization, `thiserror`/`anyhow` for errors, `tokio` for async I/O, `axum` for HTTP services, `reqwest` for HTTP clients, `tracing` for service logs, `rayon` for data parallelism, `regex`, and `tempfile`/`proptest`/`criterion` for tests and benchmarks. Never hand-roll cryptography, TLS, or parsers for complex standard formats.
-- Enable only the features you use (no `tokio/full` in libraries). Do not add a crate for a few lines of code or for style.
-
-**Concurrency, unsafe, performance**
-- Use async only for I/O concurrency such as servers, many connections, or concurrent requests. Use threads or `rayon` for CPU-bound work, and plain synchronous code for ordinary file processing. Read [references/concurrency.md](references/concurrency.md) before writing a service, async code, or nontrivial multithreading.
-- Use unsafe code only for FFI or a measured need with no safe alternative, behind a small safe API. Read [references/unsafe-ffi.md](references/unsafe-ffi.md) before writing any `unsafe` or FFI code.
-- Design for stated performance requirements from the start: stream rather than load whole inputs, avoid per-item allocation in hot loops, buffer I/O. Measure only release builds. A performance claim needs measurements on representative and worst-case inputs (for example, high-cardinality data as well as typical data), compared under the same conditions. Read [references/performance.md](references/performance.md) before benchmarking, optimizing, or making any performance claim.
-
-**Code and documentation**
-- Comments explain why: invariants, safety arguments, non-obvious decisions. They do not narrate code. Delivered paths contain no `todo!()`, stubs, placeholder data, or commented-out code.
-- Write the documentation users need: what the program does, prerequisites (Rust via rustup), build/install/run commands, real examples, configuration, and limitations. Public library items get rustdoc with an example. Run every command you document.
-
-## 4. Verify against the requirements
-
-For every change, run the project's own checks, or this baseline when it has none:
+Use the project's checks. For new projects, a useful starting point is:
 
 ```sh
 cargo fmt --all --check
-cargo clippy --workspace --all-targets --all-features -- -D warnings
-cargo test --workspace --all-features
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
 ```
 
-`cargo test` without target flags includes doctests, but `--all-targets` excludes them. If features are mutually exclusive, test the meaningful combinations instead of `--all-features`.
+Then test supported feature/target combinations; `--all-features` is useful only if that combination is supported. `cargo test --all-targets` skips doctests, so run doctests separately if using it. Exercise release behavior where profiles affect correctness, as well as the installed binary, packaged library with an external consumer, or real service boundary. See [verification.md](references/verification.md) for targeted checks. Add tests that could distinguish a plausible wrong implementation; reproduce a regression without the fix when feasible. Do not add exhaustive machinery for a trivial edit.
 
-Then gather evidence for each requirement and its likely failure modes:
-- Test behavior, not just compilation. Cover each checklist item plus empty, malformed, boundary, oversized, and non-UTF-8 input; missing files and permissions; and errors from dependencies.
-- CLI integration tests run the real binary through `env!("CARGO_BIN_EXE_<name>")` in `tests/`, with no extra crate needed, checking stdout, stderr, and exit status.
-- Build the release artifact and use it the way the user will: real inputs, piped input and output, and the documented commands.
-- For a migration, run the original build and the Rust build on the same inputs throughout, comparing stdout, stderr, exit status, and output files.
+For new projects, substantial migrations/features, and materially risky changes, arrange one bounded review after an integrated artifact works. Reserve time for it and corrections within the task allowance. Give a fresh reviewer the request, contract, artifact revision, and build/run commands, without the implementer's verdict. Ask for concrete defects and evidence. Reuse an existing independent review when it covers the final changes; do not create extra reviewers just to satisfy this skill.
 
-For substantial work, read [references/verification.md](references/verification.md) for product-specific checks, property and fuzz testing, library packaging, and delivery checks. Fix causes rather than symptoms, add a regression test for each defect, and rerun the checks on the integrated result.
+Track review as **pending, completed, or unavailable**. Wait for an invoked reviewer; an invitation is not a completed review. Reproduce or refute findings, fix material defects, and rerun affected checks. Review changed areas again when fixes alter the assumptions. If independent review is unavailable within the host or allowance, do a distinct adversarial self-review and label it as such. Do not claim independence or quietly omit an unfinished review. [verification.md](references/verification.md) supplies a compact review brief.
 
-## 5. Get an independent review for substantial or risky work
+## Resume and deliver
 
-New projects, substantial features, migrations, and any work involving unsafe code, FFI, concurrency, untrusted input, authentication, or persisted formats require a review before delivery.
+For work that may span contexts, retain only a short private checkpoint: goal and contract, current artifact revision, next step, loaded reference paths, checks with revision/results, review status, and unresolved findings. Use the host's state facility or scratch location outside the deliverable. Do not create instruction files or commit handoff notes to track a task.
 
-- Prefer a reviewer with fresh context: a subagent, separate session, or person, whatever the host provides. Give them the original request, the requirements checklist, build and run commands, and the artifact (path, commit, or diff). Do not give them your assessment, your test summary as a conclusion, your continuation notes, or a list of areas you believe are fine. Ask them to find defects with severity and evidence, such as a reproducer or a concrete code path, not to confirm quality.
-- If no independent reviewer is available, do a separate adversarial pass: reread the request and the full diff from scratch, try to break the main and failure paths, and call it a self-review in your report.
-- Wait for the review to finish before delivering. Verify each finding by reproducing it or refuting it with evidence. Fix material findings at the cause, add regression tests, and recheck the integrated result. Favorable opinions do not close a finding; evidence does. Report unresolved disagreements instead of dropping them.
+After context loss, reread this skill and the references needed for the next step. Reconcile the checkpoint with the actual diff and artifacts. Missing evidence is unverified; stale test/review results do not become current by being copied into a summary. Rerun checks affected by changes, not every unrelated check automatically.
 
-## 6. Keep continuation state on long tasks
-
-When work may outlast the context window or be resumed later, keep a short state note: goal, requirements checklist, key decisions and reasons, invariants, done/in progress/next, verification status, open findings. Keep it where it survives a context reset but is not part of the deliverable or of what reviewers see: the host's task or plan facility, its scratch directory, or an untracked path listed in `.git/info/exclude`. Do not put task state into instruction files such as AGENTS.md or CLAUDE.md.
-
-After a context reset or on resumption, reread this skill and any reference you rely on. Then reconcile the note with the repository (`git status`, `git log`, build, tests) before editing. Where they disagree, the repository wins.
-
-## 7. Deliver
-
-- Recheck the requirements checklist. Nothing may be silently dropped, stubbed, or replaced by a temporary bridge.
-- Run the final checks on the final revision, then build and exercise the artifact users receive: installed binary, packaged crate, or deployed configuration.
-- Remove task-only notes, scratch files, debug output, and temporary data. Confirm `git status` shows only intended changes, and preserve existing documentation and instructions.
-- Report concisely: what was built or changed; how to build, install, and use it; which checks ran and their results; what was not verified; and known limitations, accepted behavior differences, and unresolved findings. If any scope or necessary verification is incomplete, say so and list what remains.
+Before delivery, compare the final artifact with the requirement checklist. Run affected final checks and documented commands that apply to this environment. Check install/package contents for scratch files and unintended dependencies. Report what changed, evidence and its revision, review status, unverified requirements, accepted differences, and unresolved findings. Never describe an unbuilt artifact or an unmet performance target as verified.
