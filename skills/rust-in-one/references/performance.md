@@ -7,8 +7,8 @@ Read this before benchmarking, optimizing, or claiming anything about speed or m
 - Use the shipped optimized profile, usually `--release`. Default development builds are not a useful proxy for release performance; custom profiles and overflow/panic settings also matter.
 - Benchmark representative workloads: realistic sizes and distributions, cold and warm file cache stated, on the machine and build settings that matter. Confirm correctness first, since a fast wrong answer is not a result.
 - Whole-program comparisons: use `hyperfine` if installed, otherwise repeat runs and report median and spread rather than the best run. Report peak memory with `/usr/bin/time -v` (maximum resident set size) where available.
-- Micro-benchmarks: use `criterion` (stable) or a justified small timing harness, with `std::hint::black_box` on inputs and outputs so the optimizer cannot remove the work.
-- Comparing against another implementation: same inputs, same machine, both at their shipped optimization level, outputs verified identical, several runs each. For statistical claims, decide the acceptable margin before looking at results. An inconclusive result is reported as inconclusive.
+- Micro-benchmarks: use `criterion` (stable) or a justified small timing harness. Use `std::hint::black_box` on inputs and outputs to discourage optimization of the measured work; it is a best-effort hint, not a guarantee.
+- Comparing against another implementation: same inputs, same machine, both at their shipped optimization level, results verified against the same correctness contract, several runs each. For statistical claims, decide the acceptable margin before looking at results. An inconclusive result is reported as inconclusive.
 
 ## Find the actual cost
 

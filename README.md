@@ -2,7 +2,7 @@
 
 Rust engineering guidance for an agent carrying a request through implementation, verification, and delivery.
 
-This [Agent Skill](https://agentskills.io/specification) prioritizes new Rust CLIs, libraries, and services, then substantial Rust-native migrations, especially from C/C++. It also supports focused fixes and improvements to existing Rust code. It does not select Rust merely because the skill is installed, or apply Rust procedures to unrelated languages.
+This [Agent Skill](https://agentskills.io/specification) prioritizes new Rust CLIs, libraries, and services, then substantial Rust-native migrations, especially from C/C++. It also supports focused fixes and improvements to existing Rust code. The skill instructs agents not to select Rust merely because it is installed or apply Rust procedures to unrelated languages.
 
 ## What it provides
 
@@ -14,9 +14,9 @@ This [Agent Skill](https://agentskills.io/specification) prioritizes new Rust CL
 
 The process scales down for focused fixes. Existing host or companion-skill planning, checks, and reviews can satisfy the workflow without duplication. Instructions guide behavior; they cannot guarantee that an agent loads references, completes a review, or produces correct software.
 
-## Install and use
+## Install and use locally
 
-Copy the **whole** [`skills/rust-in-one`](skills/rust-in-one) directory from the revision you intend to use, including `references/` and `LICENSE.txt`:
+Copy the **whole** [`skills/rust-in-one`](skills/rust-in-one) directory from the revision you intend to use, including `references/` and `LICENSE.txt`. The locations below are for local sessions. For cloud or account-synced installations, follow the client's documentation.
 
 | Client | Project location | Personal location |
 | --- | --- | --- |
@@ -31,7 +31,7 @@ mkdir -p /path/to/project/.agents/skills
 cp -R skills/rust-in-one /path/to/project/.agents/skills/
 ```
 
-Use your actual project path. When updating, replace the installed skill after preserving any local customizations; merging copies can leave obsolete files. Confirm discovery in the client, then explicitly invoke `$rust-in-one` in Codex or `/rust-in-one` in Claude Code to check loading. Automatic selection depends on the host and prompt; discovery alone does not prove the body or references were read.
+Use your actual project path. When updating, replace the installed skill after preserving any local customizations; merging copies can leave obsolete files. Confirm discovery in the client. In Codex CLI or the IDE extension, mention `$rust-in-one`; in Claude Code, start a message with `/rust-in-one`. Automatic selection depends on the host and prompt; discovery alone does not prove the body or references were read.
 
 Example requests:
 
@@ -40,7 +40,7 @@ Example requests:
 - “Finish this library's public API and verify it from a separate consumer.”
 - “Fix the parser's handling of negative coordinates without changing its public API.”
 
-Only standard skill frontmatter and relative file links are required. No particular model, plugin, hook, MCP server, or companion skill is required. Execution checks need the applicable Rust toolchain; optional tools are used only when available or justified. Harness integration remains optional.
+The skill uses standard frontmatter and relative file links. No particular model, plugin, hook, MCP server, or companion skill is required. Execution checks need the applicable Rust toolchain; optional tools are used only when available or justified. Harness integration remains optional.
 
 ## Contents
 
@@ -55,7 +55,7 @@ Only standard skill frontmatter and relative file links are required. No particu
 
 ## Evidence and limitations
 
-Experimental. See [evaluation notes](docs/evaluation.md) for the tested revisions, models, methods, results, and limitations. A passing task or favorable review is not evidence of general effectiveness. Earlier Claude results remain [preliminary reports in history](https://github.com/TKY-27/Rust-in-One/blob/3967848af3fe9bbf03d99c06afa2a473deea4a0a/README.md#status), not independently reproduced measurements.
+Experimental. The [evaluation notes](docs/evaluation.md) identify the frozen skill snapshot used in the reported trials, together with the models, methods, results, and limitations. Later editorial revisions have not been rerun in those trials. A passing task or favorable review is not evidence of general effectiveness. Earlier Claude results remain [preliminary reports in history](https://github.com/TKY-27/Rust-in-One/blob/3967848af3fe9bbf03d99c06afa2a473deea4a0a/README.md#status), not independently reproduced measurements.
 
 ## Contributing and validation
 

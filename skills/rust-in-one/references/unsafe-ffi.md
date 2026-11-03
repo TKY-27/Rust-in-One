@@ -9,13 +9,13 @@ Use it for FFI, for a safe abstraction that neither std nor a maintained crate p
 ## Writing it
 
 - The safety boundary is the module, not the block. Any code that can modify the fields an `unsafe` block relies on is part of the safety argument, so keep those fields private.
-- Give every `unsafe` block a `// SAFETY:` comment naming the invariants it relies on and why they hold here. Give every `unsafe fn` and `unsafe trait` a `# Safety` section stating the caller's obligations. Enable `clippy::undocumented_unsafe_blocks`. Edition 2024 already warns on unsafe operations inside `unsafe fn` without an inner `unsafe` block.
+- Give every `unsafe` block a `// SAFETY:` comment naming the invariants it relies on and why they hold here. In a `# Safety` section, state the caller's obligations for each `unsafe fn` and the implementer's obligations for each `unsafe trait`. Enable `clippy::undocumented_unsafe_blocks`. Edition 2024 already warns on unsafe operations inside `unsafe fn` without an inner `unsafe` block.
 - Common sources of undefined behavior:
-  - creating a reference (`&`/`&mut`) to uninitialized, misaligned, or dangling memory. Use `MaybeUninit`, raw pointers, `&raw const` / `&raw mut`, and `read_unaligned` instead;
+  - creating a reference (`&`/`&mut`) to uninitialized, misaligned, or dangling memory. Use `MaybeUninit<T>` for uninitialized storage and `&raw const` / `&raw mut` when forming a reference would be invalid. `read_unaligned` relaxes alignment only: the pointer must still be valid for reads and point to an initialized `T`;
   - aliasing violations: violating exclusive access through a live `&mut` (valid reborrows are allowed; merely having another pointer variable is not itself UB). Follow the current [aliasing rules](https://doc.rust-lang.org/reference/behavior-considered-undefined.html), rather than assuming a complete formal model;
   - invalid values: a `bool` other than 0 or 1, an out-of-range `char`, an enum with an unlisted discriminant, a null reference or `NonNull`. Never transmute integers from outside into such types;
   - `slice::from_raw_parts` with a null or misaligned pointer, even for length 0 (use `NonNull::dangling()`), or with a total size above `isize::MAX` bytes; the range must also lie within one allocation and contain initialized valid elements;
-  - `Vec::set_len` over uninitialized elements; lifetimes extended through raw pointers; data races through shared raw pointers.
+  - `Vec::set_len` over uninitialized elements; using references after their pointee's lifetime ends; data races through shared raw pointers.
 
 ## FFI boundaries
 
