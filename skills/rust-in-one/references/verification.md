@@ -1,6 +1,6 @@
 # Verification, review, and delivery
 
-Read the relevant sections while planning substantial work, before designing the first working path or public interface. Return to them for review and delivery. The table is a menu of product risks, not a requirement to run every check on every task.
+Read the relevant sections while planning substantial work, before designing the first working path or public interface. For a review-only request, start with **Review existing code** below. Return to the applicable checks for review and delivery. The table is a menu of product risks, not a requirement to run every check on every task.
 
 ## Map requirements to evidence
 
@@ -41,6 +41,17 @@ Compiling across feature combinations does not test their behavior. A passing `c
 - For complex textual output, golden files or snapshot tests (`insta`) catch regressions. Review every snapshot update rather than accepting it blindly.
 - For isolated async timer logic, use `#[tokio::test(start_paused = true)]` with Tokio's `test-util` feature and current-thread runtime. Real transport tests still need bounded real deadlines.
 - A passing test can provide evidence even if you did not observe it failing first. For a bug-fix regression test, confirm that it fails without the fix when feasible so you know it detects the actual defect.
+
+## Review existing code
+
+Use this workflow for a whole-project audit or a review of a diff, commit, or working-tree change. The finding format and premise checks below also apply here.
+
+- Establish the target revision, scope, and comparison base where applicable. Read the repository's instructions, contracts, build configuration, and relevant tests. For a large repository, map its entry points and module boundaries, prioritize the consequential paths, and state what remains unexamined.
+- Trace callers, data ownership, state transitions, error paths, and downstream compatibility before judging a local pattern. Use the product risks above and relevant Skill references; open [migration.md](migration.md) when assessing a port's fidelity. Check the resolved dependency versions, enabled features, and target assumptions behind a finding.
+- Preserve the reviewed files and unrelated user changes. Use checking modes rather than automatic formatting or fixes; use a disposable copy for reproducers or commands that may alter tracked files. Run repository code within the host's trust and permission boundaries.
+- Report concrete defects first, ordered by impact. For each, give the location, triggering conditions, violated contract or invariant, consequence, and evidence. Distinguish a reproduced failure from a source-based inference or an unresolved question. For a diff review, distinguish introduced problems from pre-existing ones; do not present speculative performance concerns as measured regressions.
+- Report maintainability concerns separately, with the specific cost of understanding or changing the code. Respect deliberate design and local conventions; function length, file count, and personal stylistic preference alone do not establish a defect.
+- Deliver findings and practical correction directions, then the reviewed revision and scope, checks actually run, and remaining gaps. If no actionable findings remain, say so without certifying correctness. Do not invent findings to fill a quota or start repairs unless requested.
 
 ## Independent review
 

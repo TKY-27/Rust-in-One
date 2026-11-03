@@ -2,7 +2,7 @@
 
 Rust engineering guidance for an agent carrying a request through implementation, verification, and delivery.
 
-This [Agent Skill](https://agentskills.io/specification) prioritizes new Rust CLIs, libraries, and services, then substantial Rust-native migrations, especially from C/C++. It also supports focused fixes and improvements to existing Rust code. The skill instructs agents not to select Rust merely because the skill is installed or apply Rust procedures to unrelated languages.
+This [Agent Skill](https://agentskills.io/specification) prioritizes new Rust CLIs, libraries, and services, then substantial Rust-native migrations, especially from C/C++. It also supports focused fixes, improvements, and reviews of existing Rust code. The skill instructs agents not to select Rust merely because the skill is installed or apply Rust procedures to unrelated languages.
 
 ## What it provides
 
@@ -10,6 +10,7 @@ This [Agent Skill](https://agentskills.io/specification) prioritizes new Rust CL
 - An early working path through the product's real interface, with verification chosen from the requirements.
 - Readability and maintainability guidance: results and control flow that state their meaning, boundaries by responsibility, reuse of library behavior that matches the contract, and restructuring that preserves observable behavior.
 - For changes to existing projects: tracing the affected architecture and obligations first, extending existing implementations, and checking the impact on unchanged behavior.
+- For reviews of an existing repository or diff: evidence-backed findings, severity and coverage, without changing the reviewed files unless fixes are requested.
 - Migration checks against defined source behavior, including errors, exit statuses, and measured performance.
 - A bounded independent review for substantial or materially risky work, covering defects and proportionate maintainability findings, with explicit self-review fallback and honest status reporting.
 - Short private continuation state that is checked against current artifacts after a context reset.
@@ -28,7 +29,9 @@ Choose the agents you use. Project installation is the default; add `-g` for a p
 
 Claude Code, Codex, Gemini CLI, Cursor, GitHub Copilot, OpenCode, Amp, Pi, Cline, Roo Code, and other clients are covered in the [installation and compatibility guide](docs/compatibility.md). It includes exact-revision installation, native paths, explicit invocation, updates, removal, and a manual-copy option without Node.js. The complete [`skills/rust-in-one`](skills/rust-in-one) directory is the portable package; retain its references and license.
 
-The pinned installer provides 79 agent identifiers. Project installation was checked for all 79 identifiers; native agent activation has been tested in Claude Code only. See the guide for the Cline path caveat and the distinction between installation and runtime support.
+The installed Skill contains only instructions, references, and a license. It adds no executable hooks or background service. The Skills CLI is a separate third-party installer; manual copying avoids running it. Keep your agent's normal permissions and follow [SECURITY.md](SECURITY.md).
+
+The pinned installer provides 79 agent identifiers. Project installation was checked for all 79 identifiers using an earlier package revision; native agent activation has been tested in Claude Code only. See the guide for the Cline path caveat and the distinction between installation and runtime support.
 
 ## Use
 
@@ -40,6 +43,8 @@ Example requests:
 - “Port this C tool to native Rust, preserving its CLI behavior and meeting the current throughput.”
 - “Finish this library's public API and verify it from a separate consumer.”
 - “Fix the parser's handling of negative coordinates without changing its public API.”
+- “Review this Rust repository for correctness, security, and maintainability without changing files. Prioritize actionable findings and state what you checked.”
+- “Review the diff against main, including effects on callers and public APIs. Do not edit the code.”
 
 The skill uses standard frontmatter and relative file links. No particular model, plugin, hook, MCP server, or companion skill is required. Execution checks need the applicable Rust toolchain; optional tools are used only when available and applicable to the task. Harness integration remains optional.
 
@@ -56,7 +61,7 @@ The skill uses standard frontmatter and relative file links. No particular model
 
 ## Evidence and limitations
 
-Experimental. The [evaluation notes](docs/evaluation.md) identify the frozen skill snapshot used in the reported trials, together with the models, methods, results, and limitations. Later editorial revisions have not been rerun in those trials; separate, smaller Haiku-only audits of later revisions, including a readability and change-impact pilot, are recorded at the end of the same notes. A passing task or favorable review is not evidence of general effectiveness. Earlier Claude results remain [preliminary reports in history](https://github.com/TKY-27/Rust-in-One/blob/3967848af3fe9bbf03d99c06afa2a473deea4a0a/README.md#status), not independently reproduced measurements.
+Experimental. The [evaluation notes](docs/evaluation.md) identify the frozen skill snapshot used in the reported trials, together with the models, methods, results, and limitations. Later sections record smaller Haiku generation and in-task review trials, plus a separate readability assessment using the authoring model. That assessment was not performed with Haiku or by a human. Results apply only to the named revisions; the review-only workflow has not yet had a behavioral trial. A passing task or favorable review is not evidence of general effectiveness. Earlier Claude results remain [preliminary reports in history](https://github.com/TKY-27/Rust-in-One/blob/3967848af3fe9bbf03d99c06afa2a473deea4a0a/README.md#status), not independently reproduced measurements.
 
 ## Contributing and validation
 

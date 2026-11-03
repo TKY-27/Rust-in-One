@@ -82,7 +82,7 @@ For a manual copy, preserve local customizations, replace the installed director
 | Native activation and task behavior | Claude Code trials recorded in [evaluation.md](evaluation.md) | Partial activation; small tasks and limited models/revisions |
 | Other native hosts | Primary-source installation paths and commands above | Native activation and behavior have not been exercised here |
 
-The installable directory is unchanged by this compatibility work. The complete installer registry and its release source are pinned at [`7a5e920`](https://github.com/vercel-labs/skills/tree/7a5e920bead4b1039a6d6df5d7e1163b7b09423a). For a disposable packaging check, run the following from an empty temporary project and compare the installed files with the source package:
+The installer checks above used the `3ed7139` package. Later Skill revisions retain the same directory layout but have not been rerun across all 79 destinations. The complete installer registry and its release source are pinned at [`7a5e920`](https://github.com/vercel-labs/skills/tree/7a5e920bead4b1039a6d6df5d7e1163b7b09423a). For a disposable packaging check, run the following from an empty temporary project and compare the installed files with the source package:
 
 ```sh
 npx skills@1.7.6 add /absolute/path/to/Rust-in-One --skill rust-in-one --agent '*' --copy --yes

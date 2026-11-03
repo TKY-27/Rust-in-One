@@ -1,6 +1,6 @@
 ---
 name: rust-in-one
-description: Build and verify new Rust CLIs, libraries, and services; migrate C/C++ or other software to Rust with explicit compatibility and performance checks; fix, extend, refactor, review, or optimize existing Rust code. Applies before Cargo.toml exists and when resuming Rust work. Use only for Rust work, including Rust components of mixed repositories. Do not choose Rust merely because this skill is available when the language is undecided.
+description: Build and verify new Rust CLIs, libraries, and services; migrate C/C++ or other software to Rust with explicit compatibility and performance checks; fix, extend, refactor, review, audit, or optimize existing Rust code. Applies before Cargo.toml exists and when resuming Rust work. Use only for Rust work, including Rust components of mixed repositories. Do not choose Rust merely because this skill is available when the language is undecided.
 license: MIT
 ---
 
@@ -12,6 +12,7 @@ Files under `references/` in this skill's directory are not loaded with this fil
 
 ## Choose the scope and checks
 
+- **Review or audit:** open [verification.md](references/verification.md) and follow **Review existing code**. Establish the revision and scope, then return findings and coverage. Leave the reviewed files unchanged unless fixes were also requested. The implementation, repair, and delivery steps below apply only when that work is requested; a review does not require another reviewer to review it.
 - **New project or substantial feature:** identify the observable requirements, build one real end-to-end path, then expand and verify it.
 - **Migration:** first open [migration.md](references/migration.md) and follow it. Establish the source behavior and performance baseline before designing the Rust replacement. A wrapper is not a native migration unless the user requested one.
 - **Change to an existing project:** before editing, trace what the change touches: entry points, which module owns the data and state transitions, error and output conventions, dependency boundaries, and public or compatibility obligations. Extend the types, helpers, and tests that already own the behavior instead of adding a parallel implementation.
@@ -19,9 +20,9 @@ Files under `references/` in this skill's directory are not loaded with this fil
 
 Read applicable repository instructions and, where present, Cargo manifests, toolchain pins, and CI configuration. Preserve the edition, MSRV, features, conventions, and unrelated working-tree changes. Run relevant baseline checks in existing projects; distinguish pre-existing failures from regressions. For a new project, check the available toolchain and choose a supported edition and layout.
 
-Write a short requirements checklist (the task contract) covering observable behavior and constraints: inputs, outputs, failure behavior, public interfaces, platforms, and any resource constraints. Resolve routine technical choices yourself. Ask only when an unresolved product choice materially changes the result and has no reasonable default. Do not silently reduce scope.
+For implementation work, write a short requirements checklist (the task contract) covering observable behavior and constraints: inputs, outputs, failure behavior, public interfaces, platforms, and any resource constraints. Resolve routine technical choices yourself. Ask only when an unresolved product choice materially changes the result and has no reasonable default. Do not silently reduce scope.
 
-For substantial work, read the relevant product row and checks in [verification.md](references/verification.md) **while planning the first working path**, not only at delivery. Read additional references at their triggers below, and reassess those triggers when the design changes: an initially safe rewrite can acquire an FFI boundary.
+For substantial implementation work, read the relevant product row and checks in [verification.md](references/verification.md) **while planning the first working path**, not only at delivery. Read additional references at their triggers below, and reassess those triggers when the design changes: an initially safe rewrite can acquire an FFI boundary.
 
 ## Build a real path early
 
@@ -46,8 +47,8 @@ A maintainer should be able to see what the program does, in what order, and wha
 - **Results that state their meaning.** When a value decides later behavior, make that meaning visible where it is handled. A `bool` or tuple is fine when the function name makes it obvious. A consequential state, such as input that ended mid-record and changes the exit status, reads better as a named enum variant or struct field than as `Ok(true)`. Name items for the domain concept, not the mechanism.
 - **Visible control flow.** Let the top-level function read as the product's stages, such as configure, read, process, write, and report, and map outcomes to exit statuses in one place. Separate logical stages with a blank line and keep each stage's statements together.
 - **Boundaries by responsibility.** Split functions and modules where parts change for different reasons, such as input parsing, domain rules, I/O, and presentation. Keep together what changes together. Length alone is not a reason to split, and a split does not by itself require a library target, trait, or new type.
-- **Validate once.** Convert external input into checked values at one boundary and pass those on, rather than repeating range or format checks where they can drift apart.
-- **Reuse matching semantics.** Prefer std, an existing dependency, or the repository's helper when its documented behavior fits the contract, for example `str::parse`, `checked_add`, `split_once`, or `sort_by_key`. Hand-written parsing or arithmetic is extra code to test and maintain; keep it when the contract differs from the library, and test the boundary that justifies it. When replacing lower-level or foreign APIs, check differences in accepted input, errors, and edge cases.
+- **Validate at boundaries.** Convert external input into checked values and pass those on, rather than repeating range or format checks where they can drift apart. Recheck at a new trust boundary or when a state change can invalidate the earlier check.
+- **Reuse matching semantics.** Prefer std, an existing dependency, or the repository's helper when its documented behavior fits the contract, for example `str::parse`, `checked_add`, `split_once`, or `sort_by_key`. Hand-written parsing or arithmetic is extra code to test and maintain; keep it when the contract differs from the library or measurements justify it, and test the boundary that justifies it. When replacing lower-level or foreign APIs, check differences in accepted input, errors, and edge cases.
 - **Earned abstractions.** Add a type, trait, generic, or module when it names a real concept, removes real duplication, or isolates something expected to vary. Remove dead code, unused parameters, and placeholder branches. Comments state contracts, invariants, and non-obvious reasons rather than narrating code.
 
 Restructuring preserves observable behavior unless the requirements change it: output emitted before a failure, which error is reported when several apply, side effects and state changes, flushing and cleanup, limits, exit statuses, and public interfaces. Validating all input before writing output, or streaming input that was previously collected, can be an improvement or a compatibility break; check the contract first. When existing tests do not pin the behavior being restructured, add a characterization test before changing it.
@@ -61,9 +62,9 @@ Restructuring preserves observable behavior unless the requirements change it: o
 - **Global state:** tests run concurrently. Prefer injected configuration or subprocess tests over mutating environment/current directory in-process. Edition 2024 makes `std::env::set_var`/`remove_var` unsafe; a test mutex alone does not constrain other threads or foreign code.
 - **Crates:** use maintained parsers and cryptography rather than inventing them. Common options include `clap`, `serde`, `thiserror`/`anyhow`, `tokio`, `axum`, `reqwest`, `tracing`, and `rayon`; choose only what the product warrants. Enable needed features. Prefer std facilities such as `OnceLock`/`LazyLock` when they cover the need and MSRV.
 
-Before writing a service, async code, or nontrivial multithreading, read [concurrency.md](references/concurrency.md). Choose sync, threads, or async from the workload; specify limits and shutdown/cancellation behavior before spawning work.
+Before writing or reviewing a service, async code, or nontrivial multithreading, read [concurrency.md](references/concurrency.md). Choose sync, threads, or async from the workload; specify limits and shutdown/cancellation behavior before spawning work.
 
-Before writing or changing unsafe code or FFI, read [unsafe-ffi.md](references/unsafe-ffi.md). Keep the boundary narrow, document the safety obligations, and use safe alternatives where they meet the requirements.
+Before writing, changing, or reviewing unsafe code or FFI, read [unsafe-ffi.md](references/unsafe-ffi.md). Keep the boundary narrow, document the safety obligations, and use safe alternatives where they meet the requirements.
 
 Before optimizing, benchmarking, or claiming speed/memory improvements, read [performance.md](references/performance.md). Measure a correct optimized artifact against a defined baseline, workload, and acceptance threshold. Streaming and buffer reuse help where input size or profiling justifies them.
 

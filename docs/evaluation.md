@@ -175,7 +175,7 @@ These are qualitative judgments from one evaluator on one sample per cell. They 
 
 ### Consumption
 
-Costs are the CLI's `total_cost_usd` at list price, not billing records. Token figures are cumulative `modelUsage` totals. Every recorded request used `claude-haiku-5-5`, including the T3 reviewer subagent. Jobs ran concurrently on four CPUs, so wall times are only indicative.
+Costs are the CLI's `total_cost_usd` at list price, not billing records. Token figures are cumulative `modelUsage` totals. Every request recorded for the ten generation and maintenance jobs and their subagents used `claude-haiku-5-5`, including the T3 reviewer subagent. Jobs ran concurrently on four CPUs, so wall times are only indicative.
 
 | Arm (5 jobs) | Cost (USD) | Output tokens | Cache read | Cache write | Uncached input | Wall time |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -184,10 +184,13 @@ Costs are the CLI's `total_cost_usd` at list price, not billing records. Token f
 
 Most of the enabled arm's extra time came from the T3 migration: 1,057 s versus 480 s, including the review. There were no retries or regenerations. Infrastructure probes cost under $0.01 in total. Authoring and the readability assessment used a different model and are not included.
 
+**Consumption reconciliation:** applying the earlier audit's quoted rates and one-hour cache-write assumption to this pilot's token counts yields $0.20634097 enabled and $0.16629162 disabled. The enabled estimate differs from the reported $0.2020. Different cache durations or pricing may explain it, but request-level telemetry is unavailable here. Preserve the reported figures and treat cost comparisons as provisional.
+
 ### Limits
 
-- Small pilot: one sample per cell, one model, one host, Linux only.
+- Small pilot: one sample per cell, one generation model, one host, Linux only.
 - The tasks were bounded multi-file programs, not large migrations or long-running projects.
 - The deterministic checks could not separate the arms, and the readability comparison depends on a single evaluator.
+- The readability assessment used the authoring model rather than Haiku; its exact model identifier and usage are not recorded here. This departed from the intended all-Haiku evaluation constraint. The trial-job model and cost tables exclude that assessment, and blinded labels do not establish independence from the authoring model's preferences.
 - The five diagnostic source files that motivated this revision were not available in the authoring environment, so the revision relied on their written review. The closed-descriptor behavior was checked against Rust 1.97.0 std source and by execution on Linux x86_64 with glibc 2.39. Other targets were not executed.
 - Raw prompts, transcripts, artifacts, graders, the blind mapping, and the assessment are kept outside this repository; their continued availability is not guaranteed.
