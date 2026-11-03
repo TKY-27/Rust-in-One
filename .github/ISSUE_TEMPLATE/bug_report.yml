@@ -1,0 +1,35 @@
+name: Bug or compatibility report
+description: Report incorrect guidance, installation problems, or reproducible agent behavior.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For sensitive findings, follow [SECURITY.md](https://github.com/TKY-27/Rust-in-One/blob/main/SECURITY.md). Keep credentials, private source code, and personal information out of reports.
+  - type: input
+    id: revision
+    attributes:
+      label: Skill revision
+      description: Commit SHA or version, and how you installed it.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Client/version, OS, and model/settings when relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Request, commands, or the exact passage of guidance involved.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and observed behavior
+      description: Include checks you actually ran and relevant primary sources. Say whether the Skill body and references were loaded, if known.
+    validations:
+      required: true

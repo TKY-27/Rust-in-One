@@ -14,24 +14,23 @@ This [Agent Skill](https://agentskills.io/specification) prioritizes new Rust CL
 
 The process scales down for focused fixes. Existing host or companion-skill planning, checks, and reviews can satisfy the workflow without duplication. Instructions guide behavior; they cannot guarantee that an agent loads references, completes a review, or produces correct software.
 
-## Install and use locally
+## Install
 
-Copy the **whole** [`skills/rust-in-one`](skills/rust-in-one) directory from the revision you intend to use, including `references/` and `LICENSE.txt`. The locations below are for local sessions. For cloud or account-synced installations, follow the client's documentation.
-
-| Client | Project location | Personal location |
-| --- | --- | --- |
-| [Codex](https://learn.chatgpt.com/docs/build-skills) | `.agents/skills/rust-in-one/` | `~/.agents/skills/rust-in-one/` |
-| [Claude Code](https://code.claude.com/docs/en/skills) | `.claude/skills/rust-in-one/` | `~/.claude/skills/rust-in-one/` |
-| Other [Agent Skills clients](https://agentskills.io/clients) | Consult that client's documentation | Consult that client's documentation |
-
-For example, from this checkout, install for one Codex project:
+From your target project, use the [Skills CLI](https://github.com/vercel-labs/skills) with Node.js 22.20 or later and Git:
 
 ```sh
-mkdir -p /path/to/project/.agents/skills
-cp -R skills/rust-in-one /path/to/project/.agents/skills/
+npx skills@1.7.6 add TKY-27/Rust-in-One --skill rust-in-one
 ```
 
-Use your actual project path. When updating, replace the installed skill after preserving any local customizations; merging copies can leave obsolete files. Confirm discovery in the client. In Codex CLI or the IDE extension, mention `$rust-in-one`; in Claude Code, start a message with `/rust-in-one`. Automatic selection depends on the host and prompt; discovery alone does not prove the body or references were read.
+Choose the agents you use. Project installation is the default; add `-g` for a personal installation or `--copy` when symlinks are unsuitable. A private repository requires existing access. The installer version is pinned to the version checked for this guide; it does not pin the Skill revision.
+
+Claude Code, Codex, Gemini CLI, Cursor, GitHub Copilot, OpenCode, Amp, Pi, Cline, Roo Code, and other clients are covered in the [installation and compatibility guide](docs/compatibility.md). It includes exact-revision installation, native paths, explicit invocation, updates, removal, and a manual-copy option without Node.js. The complete [`skills/rust-in-one`](skills/rust-in-one) directory is the portable package; retain its references and license.
+
+The pinned installer provides 79 agent identifiers. Project installation was checked for all 79 identifiers; native agent activation has been tested in Claude Code only. See the guide for the Cline path caveat and the distinction between installation and runtime support.
+
+## Use
+
+In Codex CLI or the IDE extension, mention `$rust-in-one`; in Claude Code, start a message with `/rust-in-one`. Other clients' activation commands are in the compatibility guide. Automatic selection depends on the host and prompt; discovery alone does not prove the body or references were read.
 
 Example requests:
 
@@ -59,17 +58,17 @@ Experimental. The [evaluation notes](docs/evaluation.md) identify the frozen ski
 
 ## Contributing and validation
 
-Tie guidance to a technical error or a transferable observed failure. Prefer a small core with specialized references linked at the decision point. Avoid mandatory tools or procedures that add overhead without product value.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for focused changes, bug reports, validation, and evidence standards. For sensitive reports, follow [SECURITY.md](SECURITY.md).
 
 Validate frontmatter with the [reference implementation](https://github.com/agentskills/agentskills/tree/main/skills-ref). The `skills-ref` 0.1.1 distribution installs the `agentskills` command:
 
 ```sh
-python -m pip install skills-ref==0.1.1
+python -m pip install -r requirements-dev.txt
 agentskills validate skills/rust-in-one
 python scripts/check-package.py
 ```
 
-The last command checks local file links, a standalone installation copy, and matching MIT notices; it is not a substitute for schema validation and does not verify remote URLs or anchors. Keep generated trial projects, raw logs, hidden checks, and task/handoff notes outside this repository. Report model/settings, skill revision, checks actually run, failures, resource limits, and missing measurements when contributing evaluation results.
+Use Python 3.10 or later. The last command checks local Markdown file links, a standalone installation copy, and matching MIT notices; it is not a substitute for schema validation and does not verify remote URLs or anchors. [CI](.github/workflows/validate.yml) runs package validation on Linux, macOS, and Windows without model calls. Generated trial projects, raw logs, hidden checks, and task/handoff notes stay outside this repository.
 
 ## License
 

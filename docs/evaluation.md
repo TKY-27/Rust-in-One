@@ -68,6 +68,8 @@ The bounded standard-library tasks do not cover substantial production-sized mig
 
 The local evidence bundle contains requests, source baselines, skill snapshots, file hashes, generated artifacts, available command logs, review/report records, graders, and measured results. It remains outside this OSS repository, as do private acceptance details and task notes. Full model transcripts and billing telemetry were not available through the subagent interface, so exact stochastic replay or dollar-cost reproduction is not claimed.
 
+**Evidence availability:** raw trial artifacts, graders, and logs were retained outside this repository in temporary authoring environments, including the later Haiku audit. Their continued availability is not guaranteed. This repository preserves the reports and evaluated Skill revisions, but does not provide a complete independently rerunnable evaluation bundle.
+
 `skills-ref` 0.1.1's actual `agentskills validate` command passed. The repository's `scripts/check-package.py` separately checks local file links, standalone copy contents, and MIT notice equality. This was not merely a local reimplementation of the schema validator. Installation paths and skill lifecycle claims were checked against the current [Agent Skills specification](https://agentskills.io/specification), [OpenAI guidance](https://learn.chatgpt.com/docs/build-skills), and [Claude Code documentation](https://code.claude.com/docs/en/skills).
 
 ## Haiku-only audit trials (2026-11-03)
@@ -105,7 +107,7 @@ Both arms reached or nearly reached every acceptance check, so these tasks did n
 
 ### Consumption
 
-All costs are the CLI's `total_cost_usd`, computed at list price. They are not billing records. Token counts are cumulative `modelUsage` totals, including subagents. Pricing was taken from Anthropic's pricing page on 2026-11-03: Haiku 5.5 prompts up to 100K tokens cost $0.10/MTok for input, $0.50/MTok for output, $0.01/MTok for cache hits, and $0.20/MTok for 1-hour cache writes. Wall time is dispatch to exit, including waits for subagents. Four jobs ran concurrently on four CPUs. Runtime ratios were measured afterwards with five alternating runs and no other jobs.
+All costs are the CLI's `total_cost_usd`, computed at list price. They are not billing records. Token counts are cumulative `modelUsage` totals, including subagents. Pricing was taken from [Anthropic's pricing page](https://platform.claude.com/docs/en/about-claude/pricing) on 2026-11-03: Haiku 5.5 prompts up to 100K tokens cost $0.10/MTok for input, $0.50/MTok for output, $0.01/MTok for cache hits, and $0.20/MTok for 1-hour cache writes. Wall time is dispatch to exit, including waits for subagents. Four jobs ran concurrently on four CPUs. Runtime ratios were measured afterwards with five alternating runs and no other jobs.
 
 | Jobs | Cost (USD) | Output tokens | Cache read | Cache write | Uncached input | Wall time |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -114,6 +116,8 @@ All costs are the CLI's `total_cost_usd`, computed at list price. They are not b
 | Candidate 2 enabled (2) | 0.1187 | 107,286 | 3,039,443 | 198,784 | 132 | 696 s |
 | Candidate 2 disabled (2) | 0.0586 | 65,449 | 782,007 | 89,852 | 44 | 388 s |
 | **Total (16)** | **0.4093** | 412,003 | 7,769,048 | 653,500 | 430 | 2,433 s |
+
+**Reconciliation note (2026-11-03):** the historical cost figures above are preserved as reported, but they do not reconcile. The displayed rows sum to $0.4097 rather than the reported $0.4093 total. Applying the stated rates and the one-hour cache-write assumption to the token totals yields $0.41443498. Per-request cache durations, pricing tiers, and raw telemetry are not available in this repository, so the discrepancy cannot be resolved here. Do not use these figures for cost comparisons or budgeting.
 
 There were no retries. Infrastructure probes added about $0.0067. Audit and authoring work used a different model and is not included; its usage was not available.
 
