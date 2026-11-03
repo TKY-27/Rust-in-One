@@ -24,7 +24,7 @@ cargo test --doc                                 # doctests only; --all-targets 
 cargo test --no-default-features                 # when the crate supports it
 RUSTDOCFLAGS="-D warnings" cargo doc --no-deps   # broken intra-doc links, missing docs if linted
 cargo build --release && ./target/release/<bin>  # the artifact users run
-cargo install --path . --root "$(mktemp -d)"     # install from the checkout, then run it from there
+cargo install --locked --path . --root "$(mktemp -d)"  # install with the tested Cargo.lock, then run it
 cargo package --list                             # files a published crate will contain
 cargo package                                    # builds the crate from its packaged contents
 cargo tree --duplicates                          # duplicate dependency versions
