@@ -2,7 +2,7 @@
 
 Rust engineering guidance for an agent carrying a request through implementation, verification, and delivery.
 
-This [Agent Skill](https://agentskills.io/specification) prioritizes new Rust CLIs, libraries, and services, then substantial Rust-native migrations, especially from C/C++. It also supports focused fixes and improvements to existing Rust code. The skill instructs agents not to select Rust merely because it is installed or apply Rust procedures to unrelated languages.
+This [Agent Skill](https://agentskills.io/specification) prioritizes new Rust CLIs, libraries, and services, then substantial Rust-native migrations, especially from C/C++. It also supports focused fixes and improvements to existing Rust code. The skill instructs agents not to select Rust merely because the skill is installed or apply Rust procedures to unrelated languages.
 
 ## What it provides
 
@@ -40,7 +40,7 @@ Example requests:
 - “Finish this library's public API and verify it from a separate consumer.”
 - “Fix the parser's handling of negative coordinates without changing its public API.”
 
-The skill uses standard frontmatter and relative file links. No particular model, plugin, hook, MCP server, or companion skill is required. Execution checks need the applicable Rust toolchain; optional tools are used only when available or justified. Harness integration remains optional.
+The skill uses standard frontmatter and relative file links. No particular model, plugin, hook, MCP server, or companion skill is required. Execution checks need the applicable Rust toolchain; optional tools are used only when available and applicable to the task. Harness integration remains optional.
 
 ## Contents
 

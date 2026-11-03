@@ -1,6 +1,6 @@
 # Verification, review, and delivery
 
-Read the relevant sections while planning substantial work, before its first public boundary is designed. Return to them for review and delivery. The table is a menu of product risks, not a requirement to run every check on every task.
+Read the relevant sections while planning substantial work, before designing the first working path or public interface. Return to them for review and delivery. The table is a menu of product risks, not a requirement to run every check on every task.
 
 ## Map requirements to evidence
 
@@ -8,11 +8,11 @@ For each item on the requirements checklist, pick evidence that would fail if th
 
 | Product | Checks that usually matter |
 | --- | --- |
-| CLI | Run the built binary: stdout and stderr kept separate, exit codes, stdin and `-`, `tool \| head -1` without a panic, missing and unreadable files, a directory passed as a file, empty and non-UTF-8 input, large input (time and peak memory, streaming rather than loading), `--help` matching the README |
-| Library | Integration tests in `tests/` that use only the public API; examples that compile and run; doctests; error types satisfy the caller's required bounds (often `Send + Sync + 'static`); public types have the intended `Send`/`Sync`; feature combinations; documentation builds without warnings |
+| CLI | Run the built binary: stdout and stderr kept separate, exit codes, stdin and `-`, `tool \| head -1` without a panic, missing and unreadable files, a directory passed as a file, empty and non-UTF-8 input, large input (time and peak memory, streaming rather than buffering all input), `--help` matching the README |
+| Library | Integration tests in `tests/` using only the public API; compiling and running examples; doctests; error types satisfying caller bounds (often `Send + Sync + 'static`); public types with the intended `Send`/`Sync` properties; supported feature combinations; documentation building without warnings |
 | Service | Real requests to a server bound to `127.0.0.1:0`: malformed and oversized requests, request size limits and timeouts, peers that stop reading responses, recovery of saturated worker capacity, dependency failures, graceful shutdown with in-flight requests, configuration errors at startup |
 | Concurrent code | Shutdown and cancellation paths, error propagation from tasks and threads, bounded queues under load, repeated runs to expose flakiness; `loom` for custom lock-free or atomic protocols that can be modeled with it |
-| Persistence | Interrupted writes (same-filesystem temporary file, flush/sync as required, atomic rename where supported, and parent-directory sync for crash durability on platforms that require it), recovery on restart, behavior when the file is from an older or newer version, concurrent access if possible |
+| Persistence | Interrupted writes (same-filesystem temporary file, flush/sync as required, atomic rename where supported, and parent-directory sync for crash durability on platforms that require it), recovery on restart, behavior when reading files from older or newer versions, and concurrent access (or explicit locking/rejection) when multiple readers or writers can occur |
 | Parsers and decoders of untrusted input | Property tests (`proptest`) for round trips and invariants; fuzzing (`cargo fuzz`, nightly) for crash-freedom; explicit tests for limits on nesting, length, and allocation |
 | Performance requirements | See [performance.md](performance.md) |
 
@@ -30,7 +30,7 @@ cargo package                                    # builds the crate from its pac
 cargo tree --duplicates                          # duplicate dependency versions
 ```
 
-Use optional tools when they are installed or the project already uses them, and do not report them as run otherwise: `cargo semver-checks` before releasing a library, `cargo audit` or `cargo deny check advisories` for advisories, `cargo deny check licenses` for license policy, `cargo +nightly miri test` for unsafe code (see [unsafe-ffi.md](unsafe-ffi.md)), `cargo hack --feature-powerset check` for feature combinations, and `cargo msrv verify` or `cargo +<msrv> check` for a declared `rust-version`.
+Use relevant optional tools when available, and follow the project's existing verification requirements. Report a check as run only after actually executing it: `cargo semver-checks` before releasing a library, `cargo audit` or `cargo deny check advisories` for security advisories, `cargo deny check licenses` for license policy, `cargo +nightly miri test` for unsafe code (see [unsafe-ffi.md](unsafe-ffi.md)), `cargo hack --feature-powerset check` for feature combinations, and `cargo msrv verify` or `cargo +<msrv> check` for a declared `rust-version`.
 
 Compiling across feature combinations does not test their behavior. A passing `cargo check` on another target does not show the program works there.
 
@@ -40,7 +40,7 @@ Compiling across feature combinations does not test their behavior. A passing `c
 - Use isolated temporary directories for filesystem tests (`tempfile::TempDir` is convenient). Do not mutate source fixtures or depend on an incidental current directory.
 - For complex textual output, golden files or snapshot tests (`insta`) catch regressions. Review every snapshot update rather than accepting it blindly.
 - For isolated async timer logic, use `#[tokio::test(start_paused = true)]` with Tokio's `test-util` feature and current-thread runtime. Real transport tests still need bounded real deadlines.
-- A passing test can be evidence even if it never failed. For a regression test, confirm it fails without the fix when feasible; this checks that it detects the actual defect.
+- A passing test can provide evidence even if you did not observe it failing first. For a bug-fix regression test, confirm that it fails without the fix when feasible so you know it detects the actual defect.
 
 ## Independent review
 
@@ -65,8 +65,8 @@ For a confirmed finding, explain how the fix restores the violated requirement o
 ## Delivery checks
 
 - The requirements checklist is satisfied, or each gap is stated.
-- Final checks pass on the final revision. Rerun affected checks after the last edit, including doctests when examples change.
+- Final checks pass on the final revision, with affected checks (including doctests when examples change) rerun after the last edit.
 - The delivered artifact works from a clean location: installed binary, packaged crate (`cargo package`), or container/service configuration.
 - Applicable README commands and examples were run; platform-specific or unavailable deployment steps are clearly marked unverified.
-- `git status` and `cargo package --list` (for crates) show no scratch files, notes, logs, generated test data, or secrets.
+- `git status` and `cargo package --list` (for Cargo packages) show no scratch files, notes, logs, generated test data, or secrets.
 - The report distinguishes checks that ran from checks that were not possible here, such as missing tools, platforms, or credentials.
