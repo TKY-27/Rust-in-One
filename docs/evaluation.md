@@ -69,3 +69,56 @@ The bounded standard-library tasks do not cover substantial production-sized mig
 The local evidence bundle contains requests, source baselines, skill snapshots, file hashes, generated artifacts, available command logs, review/report records, graders, and measured results. It remains outside this OSS repository, as do private acceptance details and task notes. Full model transcripts and billing telemetry were not available through the subagent interface, so exact stochastic replay or dollar-cost reproduction is not claimed.
 
 `skills-ref` 0.1.1's actual `agentskills validate` command passed. The repository's `scripts/check-package.py` separately checks local file links, standalone copy contents, and MIT notice equality. This was not merely a local reimplementation of the schema validator. Installation paths and skill lifecycle claims were checked against the current [Agent Skills specification](https://agentskills.io/specification), [OpenAI guidance](https://learn.chatgpt.com/docs/build-skills), and [Claude Code documentation](https://code.claude.com/docs/en/skills).
+
+## Haiku-only audit trials (2026-11-03)
+
+This later, separate audit started from `632e0a6`. Its results attach only to the revisions named here and do not change the results above. All trial roles that used a model used **`claude-haiku-5-5`**: generation, retries, subagents, and reviewers. Every request reported in the CLI's `modelUsage` was `claude-haiku-5-5`, including subagents. No LLM grading was used.
+
+| Revision | Skill change | Skill-tree SHA-256 (same method as above) | Trial jobs |
+| --- | --- | --- | --- |
+| `63ea268` (candidate 1) | `cargo install --locked` in the delivery check | `e8b69eff96006b4bf529027c0aa9d896e7ec890191fa3b962bc7d8977bb70546` | 12 (one pair per task) |
+| `5b3469e` (candidate 2) | Reference files must be opened; migration step explicit | `5ef446994ae3a104fc7f2f1aae6fb359b16a59cc89b299ffa0711034c6400b38` | 4 (two repeat pairs) |
+
+### Method
+
+Claude Code CLI 2.1.317 ran headless (`-p`) with `--effort medium` and the same tools in both arms: Bash, file tools, the subagent tool, and Skill. Web tools and MCP were disabled. The model aliases and the subagent model were pinned to Haiku. The enabled arm installed the skill at the project's `.claude/skills/rust-in-one/`, and the host's own skill list confirmed discovery. The disabled arm had no copy. Each job had a fresh configuration directory with project-only settings and account skill sync disabled. Bundled host skills were identical in both arms.
+
+Generators ran in private mount and PID namespaces as uid 0 with no capabilities. `/tmp`, other runs, the repository, and graders were hidden. The host's model-authentication directory stayed visible. Prompts, limits, and checks were fixed before generation: $2 per job, 1,500 seconds per job, at most 16 jobs, and $20 in total. Artifacts were frozen and then graded by an unprivileged user. Dependencies were fetched first, and grading then ran offline in fresh network, mount, and PID namespaces. Checks were deterministic: behavioral checks, external-consumer tests, and differential runs against the original C build. Three grader bugs were corrected without changing artifacts or criteria, and every affected run was regraded:
+- a module-import error in the Python task, found before generation;
+- a wrong expected value and a debug-build overflow in the library tests, which had failed both arms identically;
+- a pattern that mistook a doc comment for C build integration, which only narrowed that check.
+
+### Results
+
+| Task | Enabled | Disabled |
+| --- | --- | --- |
+| New CLI (`key=value` diff) | 27/27; skill invoked, no reference opened, no review (reported "not performed") | 27/27 |
+| Library with external consumer | 21/21; skill listed but not invoked | 21/21 |
+| Concurrent HTTP service | 24/24; not invoked | 23/24: replied 413 with `Connection: close` but held the socket until the 5 s read timeout |
+| C migration (46 differential checks, 2× runtime bound) | 46/46, 0.40× C runtime; invoked, `migration.md` not opened, no review or review status | 46/46, 0.40× |
+| Focused Rust fix with unrelated user edits | 11/11; not invoked | 11/11 |
+| Python change in a mixed repository | 10/10; not invoked, Rust untouched | 10/10 |
+| Candidate 2 repeat: new CLI | 27/27; invoked, no reference opened; review completed, and the agent reported fixing one finding | 27/27 |
+| Candidate 2 repeat: C migration | 46/46, 0.34×; invoked, `migration.md` opened; review completed; reported residual closed-descriptor and inherited-SIGPIPE differences (not graded) | 46/46, 0.34× |
+
+Both arms reached or nearly reached every acceptance check, so these tasks did not separate the conditions. The only failed check was in a disabled artifact. Activation with Haiku was partial: the skill was invoked in 2 of 5 Rust tasks for candidate 1, and correctly not invoked for the Python task. With candidate 1, an invoked skill opened no reference file. Candidate 2 was followed by `migration.md` being read in its one migration repeat. One run cannot attribute that change to the edit, because review use also changed between same-text CLI runs. Independent review ran only in the two candidate 2 repeats. Briefs contained the request, files, and commands without the implementer's verdict. Reports named review status when they mentioned review. The candidate 1 migration report omitted it.
+
+### Consumption
+
+All costs are the CLI's `total_cost_usd`, computed at list price. They are not billing records. Token counts are cumulative `modelUsage` totals, including subagents. Pricing was taken from Anthropic's pricing page on 2026-11-03: Haiku 5.5 prompts up to 100K tokens cost $0.10/MTok for input, $0.50/MTok for output, $0.01/MTok for cache hits, and $0.20/MTok for 1-hour cache writes. Wall time is dispatch to exit, including waits for subagents. Four jobs ran concurrently on four CPUs. Runtime ratios were measured afterwards with five alternating runs and no other jobs.
+
+| Jobs | Cost (USD) | Output tokens | Cache read | Cache write | Uncached input | Wall time |
+| --- | --- | --- | --- | --- | --- | --- |
+| Candidate 1 enabled (6) | 0.1021 | 101,789 | 1,753,166 | 167,407 | 122 | 633 s |
+| Candidate 1 disabled (6) | 0.1303 | 137,479 | 2,194,432 | 197,457 | 132 | 716 s |
+| Candidate 2 enabled (2) | 0.1187 | 107,286 | 3,039,443 | 198,784 | 132 | 696 s |
+| Candidate 2 disabled (2) | 0.0586 | 65,449 | 782,007 | 89,852 | 44 | 388 s |
+| **Total (16)** | **0.4093** | 412,003 | 7,769,048 | 653,500 | 430 | 2,433 s |
+
+There were no retries. Infrastructure probes added about $0.0067. Audit and authoring work used a different model and is not included; its usage was not available.
+
+### Limits of this audit
+
+There was one sample per cell, small tasks, one model, one host, and one platform. The results do not show general benefit, guaranteed correctness, or readiness for large migrations. Activation through native discovery was observed in Claude Code only; other clients were not tested. A fresh session started without context loss, so recovery after compaction was not exercised. Miri, sanitizers, dependency-heavy migrations, and cross-platform behavior were not exercised. Package checks for this revision are described in the following paragraph. Codex install paths were checked against the `openai/codex` source, because the Codex documentation hosts and agentskills.io were unreachable from the audit environment.
+
+`agentskills validate` (skills-ref 0.1.1) and `scripts/check-package.py` passed on the final revision.

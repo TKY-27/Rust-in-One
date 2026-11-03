@@ -55,7 +55,7 @@ The skill uses standard frontmatter and relative file links. No particular model
 
 ## Evidence and limitations
 
-Experimental. The [evaluation notes](docs/evaluation.md) identify the frozen skill snapshot used in the reported trials, together with the models, methods, results, and limitations. Later editorial revisions have not been rerun in those trials. A passing task or favorable review is not evidence of general effectiveness. Earlier Claude results remain [preliminary reports in history](https://github.com/TKY-27/Rust-in-One/blob/3967848af3fe9bbf03d99c06afa2a473deea4a0a/README.md#status), not independently reproduced measurements.
+Experimental. The [evaluation notes](docs/evaluation.md) identify the frozen skill snapshot used in the reported trials, together with the models, methods, results, and limitations. Later editorial revisions have not been rerun in those trials; a separate, smaller Haiku-only audit of later revisions is recorded at the end of the same notes. A passing task or favorable review is not evidence of general effectiveness. Earlier Claude results remain [preliminary reports in history](https://github.com/TKY-27/Rust-in-One/blob/3967848af3fe9bbf03d99c06afa2a473deea4a0a/README.md#status), not independently reproduced measurements.
 
 ## Contributing and validation
 
