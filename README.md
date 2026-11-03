@@ -8,8 +8,10 @@ This [Agent Skill](https://agentskills.io/specification) prioritizes new Rust CL
 
 - Concrete Rust guidance on ownership, public APIs, byte/text boundaries, arithmetic, errors, output, and dependencies.
 - An early working path through the product's real interface, with verification chosen from the requirements.
+- Readability and maintainability guidance: results and control flow that state their meaning, boundaries by responsibility, reuse of library behavior that matches the contract, and restructuring that preserves observable behavior.
+- For changes to existing projects: tracing the affected architecture and obligations first, extending existing implementations, and checking the impact on unchanged behavior.
 - Migration checks against defined source behavior, including errors, exit statuses, and measured performance.
-- A bounded independent review for substantial or materially risky work, with explicit self-review fallback and honest status reporting.
+- A bounded independent review for substantial or materially risky work, covering defects and proportionate maintainability findings, with explicit self-review fallback and honest status reporting.
 - Short private continuation state that is checked against current artifacts after a context reset.
 
 The process scales down for focused fixes. Existing host or companion-skill planning, checks, and reviews can satisfy the workflow without duplication. Instructions guide behavior; they cannot guarantee that an agent loads references, completes a review, or produces correct software.
@@ -45,7 +47,7 @@ The skill uses standard frontmatter and relative file links. No particular model
 
 | File | When needed |
 | --- | --- |
-| [SKILL.md](skills/rust-in-one/SKILL.md) | Activation, scope, engineering defaults, verification, review, recovery |
+| [SKILL.md](skills/rust-in-one/SKILL.md) | Activation, scope, engineering defaults, readability, verification, review, recovery |
 | [verification.md](skills/rust-in-one/references/verification.md) | Planning substantial work, product-specific checks, review and delivery |
 | [migration.md](skills/rust-in-one/references/migration.md) | Before characterizing and designing a migration |
 | [concurrency.md](skills/rust-in-one/references/concurrency.md) | Before services, async, or substantial threading |
@@ -54,7 +56,7 @@ The skill uses standard frontmatter and relative file links. No particular model
 
 ## Evidence and limitations
 
-Experimental. The [evaluation notes](docs/evaluation.md) identify the frozen skill snapshot used in the reported trials, together with the models, methods, results, and limitations. Later editorial revisions have not been rerun in those trials; a separate, smaller Haiku-only audit of later revisions is recorded at the end of the same notes. A passing task or favorable review is not evidence of general effectiveness. Earlier Claude results remain [preliminary reports in history](https://github.com/TKY-27/Rust-in-One/blob/3967848af3fe9bbf03d99c06afa2a473deea4a0a/README.md#status), not independently reproduced measurements.
+Experimental. The [evaluation notes](docs/evaluation.md) identify the frozen skill snapshot used in the reported trials, together with the models, methods, results, and limitations. Later editorial revisions have not been rerun in those trials; separate, smaller Haiku-only audits of later revisions, including a readability and change-impact pilot, are recorded at the end of the same notes. A passing task or favorable review is not evidence of general effectiveness. Earlier Claude results remain [preliminary reports in history](https://github.com/TKY-27/Rust-in-One/blob/3967848af3fe9bbf03d99c06afa2a473deea4a0a/README.md#status), not independently reproduced measurements.
 
 ## Contributing and validation
 

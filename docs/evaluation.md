@@ -126,3 +126,68 @@ There were no retries. Infrastructure probes added about $0.0067. Audit and auth
 There was one sample per cell, small tasks, one model, one host, and one platform. The results do not show general benefit, guaranteed correctness, or readiness for large migrations. Activation through native discovery was observed in Claude Code only; other clients were not tested. A fresh session started without context loss, so recovery after compaction was not exercised. Miri, sanitizers, dependency-heavy migrations, and cross-platform behavior were not exercised. Package checks for this revision are described in the following paragraph. Codex install paths were checked against the `openai/codex` source, because the Codex documentation hosts and agentskills.io were unreachable from the audit environment.
 
 `agentskills validate` (skills-ref 0.1.1) and `scripts/check-package.py` passed on the final revision.
+
+## Readability and change-impact pilot (2026-11-03)
+
+This pilot tested the revision that added readability, change-impact, and maintainability-review guidance. The frozen candidate Skill tree is the one in commit `64ff545`; it was frozen before generation in an unpublished local commit. Its Skill-tree SHA-256 is `abfdee3cae52053ed235227ac7c1ed3670894827c2ec0cad3e417985554911e5`, computed with the same method as above. The baseline arm had no Skill. The results attach only to that candidate. They are not a comparison with `4d76cb1`.
+
+### Method
+
+The host was Claude Code CLI 2.1.317, run headless with `--model claude-haiku-5-5 --effort medium`. Opus, Sonnet, Haiku, and subagent model aliases were all pinned to `claude-haiku-5-5`. Both arms had the same tools: Bash, file tools, the subagent tool, and Skill. MCP and web tools were not available, and `--max-budget-usd 3` applied to each job, with a 1,800-second timeout. Each job had a fresh configuration directory and Cargo home, and project settings only. Each ran in its own mount and PID namespaces. `/tmp`, the repository, the author's session data, other jobs, graders, and expected results were hidden. Network access to crates.io was allowed in both arms.
+
+Both arms received the same prompt, plus one neutral sentence asking the agent to use a relevant skill if available. The enabled arm had the Skill installed at `.claude/skills/rust-in-one/`. In every enabled job the host listed it, and the Skill body appeared in the transcript. In T2 maintenance it was read with `cat` rather than through the Skill tool.
+
+Prompts, maintenance requests, and deterministic graders were hashed before generation. Each maintenance request was applied in a fresh context to that arm's own frozen initial artifact. Artifacts were graded as frozen and were not repaired. One sample was run per cell.
+
+Tasks:
+
+| Task | Request | Frozen checks |
+| --- | --- | --- |
+| T1, focused change | Add column ranges to an existing multi-file Rust CLI without changing other behavior | 25 differential regression checks against the original build, and 32 feature checks |
+| T2, greenfield | Multi-file inventory-ledger CLI from a written contract; maintenance adds a signed `adjust` kind, a new column, and `--sku` filtering | 42 contract checks, 9 I/O checks, and 24 maintenance checks |
+| T3, C migration | Port a three-file C tool to native Rust as a Linux drop-in; maintenance adds `-m` and `-o FILE` | 51 differential checks and 5 process checks against the C build (including SIGPIPE, `/dev/full`, and a 2× runtime bound), 13 maintenance checks, and 2 exploratory closed-descriptor checks |
+
+### Results
+
+| Job | Enabled | Disabled |
+| --- | --- | --- |
+| T1 | 57/57; Skill invoked, no reference opened, review **not performed** (focused change) | 57/57 |
+| T2 initial | 51/51; no reference opened, review **not performed** despite a new project | 51/51 |
+| T2 maintenance | 75/75 | 75/75 |
+| T3 initial | 58/58 including exploratory; `migration.md` opened; independent Haiku review completed | 58/58 including exploratory |
+| T3 maintenance | 71/71 | 66/71: all five failures are the updated usage line, which the report disclosed as an intentional difference from C |
+
+Deterministic checks did not separate the arms, except for one T3 maintenance choice that is arguable: updating the usage text versus keeping the C tool's stderr exactly. Both T3 arms chose `#![no_main]` and raw descriptors to match the C tool's closed-descriptor behavior on Linux, so this pilot does not show that the expanded closed-descriptor note in `migration.md` changed behavior.
+
+A separate post-hoc probe found that the disabled T2 artifacts panic on a non-UTF-8 file-name argument (`std::env::args`), in both the initial and maintained versions; the enabled artifacts handle it. This was not a frozen check, and the relevant `Path`/`OsStr` guidance predates this revision.
+
+The enabled T3 reviewer brief asked for maintainability findings, but it also listed areas "already checked", which the Skill tells implementers not to provide. As in earlier audits, Haiku used reference files and independent review less often than the Skill directs.
+
+### Readability assessment
+
+A blinded evaluator using the authoring model, outside the trial roles, compared the artifacts under X/Y labels. The mapping was kept separately and opened only afterwards. The evaluator named specific code for each finding and gave no aggregate score.
+
+- **T1:** mostly no material difference. The enabled arm had more consistent error naming and a test that pins partial output exactly. The disabled arm's descending-range iteration was slightly simpler.
+- **T2:** the enabled arm was rated better on names and return values (a named `ApplyError` enum rather than `String`), on responsibility-based modules (CLI, input, record, summary, render, rather than a single 473-line `lib.rs`), on library use (`args_os`), and on how locally the maintenance change landed. The disabled maintenance version derived `on_hand` through `i128` arithmetic ending in `expect`. The evaluator rated that panic as practically unreachable, but it is not documented. Both arms duplicated the output field list between the text and JSON renderers.
+- **T3:** the enabled arm was rated better on named outcome types, control flow, and narrow, `SAFETY`-documented unsafe code through `libc`. The disabled arm had hand-typed FFI and an unconditional SIGPIPE reset, where the C tool keeps the inherited disposition. The disabled arm had a better file split and better initial tests. Maintenance accommodation showed no material difference.
+
+These are qualitative judgments from one evaluator on one sample per cell. They are observations, not an effectiveness estimate.
+
+### Consumption
+
+Costs are the CLI's `total_cost_usd` at list price, not billing records. Token figures are cumulative `modelUsage` totals. Every recorded request used `claude-haiku-5-5`, including the T3 reviewer subagent. Jobs ran concurrently on four CPUs, so wall times are only indicative.
+
+| Arm (5 jobs) | Cost (USD) | Output tokens | Cache read | Cache write | Uncached input | Wall time |
+| --- | --- | --- | --- | --- | --- | --- |
+| Enabled | 0.2020 | 183,166 | 4,884,397 | 329,471 | 198 | 1,504 s |
+| Disabled | 0.1663 | 156,289 | 3,932,332 | 244,035 | 168 | 918 s |
+
+Most of the enabled arm's extra time came from the T3 migration: 1,057 s versus 480 s, including the review. There were no retries or regenerations. Infrastructure probes cost under $0.01 in total. Authoring and the readability assessment used a different model and are not included.
+
+### Limits
+
+- Small pilot: one sample per cell, one model, one host, Linux only.
+- The tasks were bounded multi-file programs, not large migrations or long-running projects.
+- The deterministic checks could not separate the arms, and the readability comparison depends on a single evaluator.
+- The five diagnostic source files that motivated this revision were not available in the authoring environment, so the revision relied on their written review. The closed-descriptor behavior was checked against Rust 1.97.0 std source and by execution on Linux x86_64 with glibc 2.39. Other targets were not executed.
+- Raw prompts, transcripts, artifacts, graders, the blind mapping, and the assessment are kept outside this repository; their continued availability is not guaranteed.
