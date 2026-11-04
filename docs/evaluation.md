@@ -194,3 +194,28 @@ Most of the enabled arm's extra time came from the T3 migration: 1,057 s versus 
 - The readability assessment used the authoring model rather than Haiku; its exact model identifier and usage are not recorded here. This departed from the intended all-Haiku evaluation constraint. The trial-job model and cost tables exclude that assessment, and blinded labels do not establish independence from the authoring model's preferences.
 - The five diagnostic source files that motivated this revision were not available in the authoring environment, so the revision relied on their written review. The closed-descriptor behavior was checked against Rust 1.97.0 std source and by execution on Linux x86_64 with glibc 2.39. Other targets were not executed.
 - Raw prompts, transcripts, artifacts, graders, the blind mapping, and the assessment are kept outside this repository; their continued availability is not guaranteed.
+
+## Greenfield verification revision (2026-11-04)
+
+The forward-check candidate is identified by Skill Git tree `c34e4a333b27021c3ecd80349b45ad8b71652839`. These are Git trees for `skills/rust-in-one`, not repository roots or commits; compare with `git rev-parse <revision>:skills/rust-in-one`. The revision adds explicit completion decisions for brief requests, selection of tests by input/path/prior state/observable result, and independent expectations for central calculations where useful. It retains the existing readability, migration, concurrency, unsafe, performance, and review guidance. Final tree `b63cd65b311f821db2bf2b3e275908697f6a6229` differs only by a delivery-check clarification from independent instruction review: retain intentional test fixtures and regression corpora when removing task scratch data. Package and all-agent installation checks were rerun on that final tree; generation was not repeated for this wording correction.
+
+### Human feedback and directed diagnostics
+
+In a maintainer-supplied human comparison, the Skill-disabled new project was narrowly preferred for its failure tests; the enabled project was better structured, and both implementations were considered good. The enabled C++ migration was preferred for separation of responsibilities and an independent algorithm used to verify results. These are qualitative judgments on two examples. The generation traces and exact Skill revision for that comparison were not available in this audit, so these observations are not attributed to the revised package.
+
+Two test-gap hypotheses in the supplied enabled new-project artifact were checked by execution on Linux x86_64 with Rust 1.99.1. Each change below was made separately in a disposable copy; the original artifact and its test suite were preserved.
+
+| Deliberate defect | Original suite after mutation | Additional real-binary check |
+| --- | --- | --- |
+| Remove only the normal-processing `BufWriter::flush`, retaining the help-path flush | All 13 tests and one doctest passed | `list` writing to `/dev/full` returned success instead of the original exit status 2 |
+| Replace only the end-time field's strict digit parser with `str::parse` into `u64` | All 13 tests and one doctest passed | An end-time token `+2` was accepted instead of returning the original syntax error |
+
+The unmodified program passed both additional checks. This demonstrates missing test discrimination, not two defects in the original implementation. It motivates checking each independently handled input and the actual path responsible for an error. It does not show that the new Skill text improves generation. Diagnostic source copies and command output remain outside the repository.
+
+### Candidate instruction and implementation check
+
+One fresh `gpt-6.1-sol` subagent, with high reasoning and no inherited conversation, received a brief request for a standard-library-only persistent named-counter CLI supporting `add`, `set`, `get`, and `list`. The candidate Skill was explicitly selected. The request and evaluator's checking plan were frozen before generation; the solver did not receive the checking plan. Delegation and publication were disabled for this probe. There was no disabled arm, repeat, or selection among alternative generations.
+
+The solver completed an installable program with a documented contract, checked arithmetic, serialized updates, temporary-file replacement, and error handling. It reported passing debug/release tests, formatting, Clippy, installation, and package verification. The evaluator froze the completed source without repairing it, built it in a separate target directory, and reran all two unit and twelve CLI integration tests successfully. Additional real-binary checks passed for the documented workflow across processes, rejected requests after successful updates, overflow, corrupt data, output failure after a committed update, and a write failure after 1,024 bytes of temporary-file output followed by recovery. These checks ran on Linux x86_64 with Rust 1.99.1.
+
+This shows that the candidate could be used to complete this bounded task; it does not isolate a Skill effect. Native discovery, automatic activation, independent-review completion, other operating systems, and large-project behavior were not tested. The solver reported review as unavailable under the explicit no-delegation constraint and performed self-review instead. Shared-filesystem access was restricted by task instructions, not a filesystem sandbox. Raw model/billing telemetry was unavailable; no cost comparison is claimed. The frozen generated project and evaluator results remain outside this repository.

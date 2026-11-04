@@ -4,11 +4,22 @@ Read the relevant sections while planning substantial work, before designing the
 
 ## Map requirements to evidence
 
-For each item on the requirements checklist, pick evidence that would fail if the implementation were plausibly wrong. A test that only exercises the happy path of the code you just wrote is weak evidence. Reuse existing checks where they still apply.
+Start with the user's workflow and contract, including the assumptions made from a brief request. Check that the requirements cover a usable result, failure handling, and delivery before deriving tests from them. A checklist copied from the implementation can preserve the same omissions. Reuse existing specifications and checks where they still apply.
+
+For each consequential requirement, choose evidence that would distinguish the intended behavior from a plausible wrong implementation. Use these questions to select cases:
+
+- **Input:** which valid boundaries, malformed values, encodings, and size limits matter? Check each independently handled field; a boundary test for one field does not establish another's behavior.
+- **Path:** does the check reach the real entry point and the branch that owns the behavior? A successful helper, startup, or help path does not establish the normal processing path's errors or cleanup.
+- **Prior state:** what changes when work has already succeeded, a resource is occupied, a dependency fails, or an operation is retried? Exercise the transitions where failure can leave partial state.
+- **Observable result:** assert the relevant return value, output, error or exit status, state, and side effects after success and failure. Check ordering or atomicity when the contract promises it.
+
+Combine these dimensions where they interact; do not generate their full Cartesian product. For example, a file exporter needs a check that failure during replacement preserves the promised existing data, as well as a successful export. Rejecting an invalid destination before any work starts does not exercise that transition. Use fault injection at the boundary when practical, and identify any gap between an injected unit test and the real installed artifact.
+
+For a central algorithm or state machine, seek an independent expectation: a simple exhaustive solver on bounded inputs, a small reference model, a known result, or a property with a separately derived invariant. Choose a method likely to fail differently from the implementation. Repeating its calculations or merely checking that it does not panic offers little evidence about a wrong result; round trips alone can also preserve a shared encoder/decoder error. A second implementation is unnecessary when direct cases already distinguish the relevant failures.
 
 | Product | Checks that usually matter |
 | --- | --- |
-| CLI | Run the built binary: stdout and stderr kept separate, exit codes, stdin and `-`, `tool \| head -1` without a panic, missing and unreadable files, a directory passed as a file, empty and non-UTF-8 input, large input (time and peak memory, streaming rather than buffering all input), `--help` matching the README |
+| CLI | Run the built binary: stdout and stderr kept separate, exit codes, stdin and `-` where supported, normal-processing write/flush failures, early downstream closure without a panic, missing and unreadable files, a directory passed as a file, empty and non-UTF-8 input, large input against the time and memory requirements, `--help` matching the README. For migrations, preserve the source's output and exit-status contract. |
 | Library | Integration tests in `tests/` using only the public API; compiling and running examples; doctests; error types satisfying caller bounds (often `Send + Sync + 'static`); public types with the intended `Send`/`Sync` properties; supported feature combinations; documentation building without warnings |
 | Service | Real requests to a server bound to `127.0.0.1:0`: malformed and oversized requests, request size limits and timeouts, peers that stop reading responses, recovery of saturated worker capacity, dependency failures, graceful shutdown with in-flight requests, configuration errors at startup |
 | Concurrent code | Shutdown and cancellation paths, error propagation from tasks and threads, bounded queues under load, repeated runs to expose flakiness; `loom` for custom lock-free or atomic protocols that can be modeled with it |
@@ -41,6 +52,7 @@ Compiling across feature combinations does not test their behavior. A passing `c
 - For complex textual output, golden files or snapshot tests (`insta`) catch regressions. Review every snapshot update rather than accepting it blindly.
 - For isolated async timer logic, use `#[tokio::test(start_paused = true)]` with Tokio's `test-util` feature and current-thread runtime. Real transport tests still need bounded real deadlines.
 - A passing test can provide evidence even if you did not observe it failing first. For a bug-fix regression test, confirm that it fails without the fix when feasible so you know it detects the actual defect.
+- Inspect whether important assertions would detect a plausible mistake, such as committing partial state on error, dropping a tie rule, accepting an invalid boundary, or returning success after an output failure. If detection is unclear, try a focused mutation in a disposable copy and confirm the relevant test fails. Use this to resolve a concrete doubt, not to meet a mutation score or test-count quota.
 
 ## Review existing code
 
@@ -48,6 +60,7 @@ Use this workflow for a whole-project audit or a review of a diff, commit, or wo
 
 - Establish the target revision, scope, and comparison base where applicable. Read the repository's instructions, contracts, build configuration, and relevant tests. For a large repository, map its entry points and module boundaries, prioritize the consequential paths, and state what remains unexamined.
 - Trace callers, data ownership, state transitions, error paths, and downstream compatibility before judging a local pattern. Use the product risks above and relevant Skill references; open [migration.md](migration.md) when assessing a port's fidelity. Check the resolved dependency versions, enabled features, and target assumptions behind a finding.
+- Compare the tests with the contract and actual execution paths. Look for a consequential failure the assertions would miss, including failure after progress and independent evidence for central calculations. Explain the missing protection without treating a missing test alone as proof that the implementation is wrong.
 - Preserve the reviewed files and unrelated user changes. Use checking modes rather than automatic formatting or fixes; use a disposable copy for reproducers or commands that may alter tracked files. Run repository code within the host's trust and permission boundaries.
 - Report concrete defects first, ordered by impact. For each, give the location, triggering conditions, violated contract or invariant, consequence, and evidence. Distinguish a reproduced failure from a source-based inference or an unresolved question. For a diff review, distinguish introduced problems from pre-existing ones; do not present speculative performance concerns as measured regressions.
 - Report maintainability concerns separately, with the specific cost of understanding or changing the code. Respect deliberate design and local conventions; function length, file count, and personal stylistic preference alone do not establish a defect.
@@ -61,7 +74,7 @@ Give the reviewer:
 - the artifact: repository path and commit, or the diff, plus build and run commands;
 - the risk areas of the product, such as untrusted input, unsafe code, concurrency, and compatibility commitments. These describe the product, not your conclusions about it.
 
-Do not give the reviewer your own verdict, your summary of which tests pass as a reason to trust the code, continuation notes, or a list of areas already checked. Ask for defects first, then a proportionate maintainability assessment: code whose names, return values, control flow, module boundaries, duplication, or abstractions would make the next change slow or error-prone. Ask for findings in this form:
+Do not give the reviewer your own verdict, your summary of which tests pass as a reason to trust the code, continuation notes, or a list of areas already checked. Ask the reviewer to compare the contract with the original request and inspect whether the tests would catch consequential wrong behavior, not just whether they pass. Request defects first, then a proportionate maintainability assessment: code whose names, return values, control flow, module boundaries, duplication, or abstractions would make the next change slow or error-prone. Ask for findings in this form:
 
 ```text
 [severity: critical/high/medium/low] [defect|maintainability] <title>
@@ -80,5 +93,5 @@ Check each premise before reporting or acting on it. For example, an ignored `fm
 - Final checks pass on the final revision, with affected checks (including doctests when examples change) rerun after the last edit.
 - The delivered artifact works from a clean location: installed binary, packaged crate (`cargo package`), or container/service configuration.
 - Applicable README commands and examples were run; platform-specific or unavailable deployment steps are clearly marked unverified.
-- `git status` and `cargo package --list` (for Cargo packages) show no scratch files, notes, logs, generated test data, or secrets.
+- Inspect `git status` and `cargo package --list` (for Cargo packages) for unintended scratch files, task notes, trial logs or data, and secrets. Retain intentional test fixtures and regression corpora.
 - The report distinguishes checks that ran from checks that were not possible here, such as missing tools, platforms, or credentials.

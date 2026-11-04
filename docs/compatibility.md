@@ -4,7 +4,7 @@ Rust-in-One is one standard [Agent Skills](https://agentskills.io/specification)
 
 ## Install with the Skills CLI
 
-Use [Vercel's Skills CLI](https://github.com/vercel-labs/skills) with Node.js 22.20 or later and Git. The examples pin the installer to **1.7.6**, the version checked on **2026-11-03**. Run from the project where the agent will work:
+Use [Vercel's Skills CLI](https://github.com/vercel-labs/skills) with Node.js 22.20 or later and Git. The examples pin the installer to **1.7.6**; package installation was rechecked on **2026-11-04**. Run from the project where the agent will work:
 
 ```sh
 npx skills@1.7.6 add TKY-27/Rust-in-One --skill rust-in-one
@@ -76,13 +76,13 @@ For a manual copy, preserve local customizations, replace the installed director
 | Layer | Evidence | Limit |
 | --- | --- | --- |
 | Package format | `skills-ref` 0.1.1 schema validation and the repository package check | Does not measure agent behavior |
-| Installer destinations | Skills CLI 1.7.6 installed the unchanged `3ed7139` package for all 79 identifiers, producing 53 distinct project locations on Linux | No native host execution in this check |
+| Installer destinations | Skills CLI 1.7.6 installed the package snapshot below for all 79 identifiers on 2026-11-04, producing 53 distinct project locations on Linux | No native host execution in this check |
 | Copied contents | All seven files present at every destination; 52 copies byte-identical; Eve's copy reformatted frontmatter with equal parsed metadata and an unchanged Markdown body apart from leading whitespace | Installer-specific transformations may change in later versions |
 | Default installation mode | Codex, Claude Code, Cursor, Gemini CLI, Copilot, and OpenCode selected together; shared `.agents/skills/` copy and Claude Code symlink verified against all seven source files | Linux project installation only; personal installations were not exercised |
 | Native activation and task behavior | Claude Code trials recorded in [evaluation.md](evaluation.md) | Partial activation; small tasks and limited models/revisions |
 | Other native hosts | Primary-source installation paths and commands above | Native activation and behavior have not been exercised here |
 
-The installer checks above used the `3ed7139` package. Later Skill revisions retain the same directory layout but have not been rerun across all 79 destinations. The complete installer registry and its release source are pinned at [`7a5e920`](https://github.com/vercel-labs/skills/tree/7a5e920bead4b1039a6d6df5d7e1163b7b09423a). For a disposable packaging check, run the following from an empty temporary project and compare the installed files with the source package:
+The all-agent copy check used Skill Git tree `b63cd65b311f821db2bf2b3e275908697f6a6229` with Node.js 24.22.1. Compare a checkout's package with `git rev-parse HEAD:skills/rust-in-one`. The default-mode symlink check used the earlier `3ed7139` package. The complete installer registry and its release source are pinned at [`7a5e920`](https://github.com/vercel-labs/skills/tree/7a5e920bead4b1039a6d6df5d7e1163b7b09423a). For a disposable packaging check, run the following from an empty temporary project and compare the installed files with the source package:
 
 ```sh
 npx skills@1.7.6 add /absolute/path/to/Rust-in-One --skill rust-in-one --agent '*' --copy --yes

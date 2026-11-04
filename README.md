@@ -1,13 +1,14 @@
 # Rust-in-One
 
-Rust engineering guidance for an agent carrying a request through implementation, verification, and delivery.
+A portable Agent Skill for carrying a Rust request through design, implementation, verification, and delivery.
 
 This [Agent Skill](https://agentskills.io/specification) prioritizes new Rust CLIs, libraries, and services, then substantial Rust-native migrations, especially from C/C++. It also supports focused fixes, improvements, and reviews of existing Rust code. The skill instructs agents not to select Rust merely because the skill is installed or apply Rust procedures to unrelated languages.
 
 ## What it provides
 
 - Concrete Rust guidance on ownership, public APIs, byte/text boundaries, arithmetic, errors, output, and dependencies.
-- An early working path through the product's real interface, with verification chosen from the requirements.
+- A complete user workflow and acceptance conditions derived from the request, followed by an early working path through the product's real interface and incremental completion.
+- Verification of input boundaries, actual execution paths, failure after progress, and observable state and output, with independent checks for central algorithms where useful.
 - Readability and maintainability guidance: results and control flow that state their meaning, boundaries by responsibility, reuse of library behavior that matches the contract, and restructuring that preserves observable behavior.
 - For changes to existing projects: tracing the affected architecture and obligations first, extending existing implementations, and checking the impact on unchanged behavior.
 - For reviews of an existing repository or diff: evidence-backed findings, severity and coverage, without changing the reviewed files unless fixes are requested.
@@ -15,7 +16,7 @@ This [Agent Skill](https://agentskills.io/specification) prioritizes new Rust CL
 - A bounded independent review for substantial or materially risky work, covering defects and proportionate maintainability findings, with explicit self-review fallback and honest status reporting.
 - Short private continuation state that is checked against current artifacts after a context reset.
 
-The process scales down for focused fixes. Existing host or companion-skill planning, checks, and reviews can satisfy the workflow without duplication. Instructions guide behavior; they cannot guarantee that an agent loads references, completes a review, or produces correct software.
+The process scales down for focused fixes. Existing host or companion-skill planning, checks, and reviews can satisfy the workflow without duplication. The goal is a complete, maintainable result from the user's request, with technical decisions handled by the agent and material assumptions made visible.
 
 ## Install
 
@@ -31,11 +32,19 @@ Claude Code, Codex, Gemini CLI, Cursor, GitHub Copilot, OpenCode, Amp, Pi, Cline
 
 The installed Skill contains only instructions, references, and a license. It adds no executable hooks or background service. The Skills CLI is a separate third-party installer; manual copying avoids running it. Keep your agent's normal permissions and follow [SECURITY.md](SECURITY.md).
 
-The pinned installer provides 79 agent identifiers. Project installation was checked for all 79 identifiers using an earlier package revision; native agent activation has been tested in Claude Code only. See the guide for the Cline path caveat and the distinction between installation and runtime support.
+The pinned installer provides 79 agent identifiers. Project installation was checked for all 79 identifiers using the package snapshot identified in the compatibility guide; native agent activation has been tested in Claude Code only. See the guide for the Cline path caveat and the distinction between installation and runtime support.
 
 ## Use
 
 In Codex CLI or the IDE extension, mention `$rust-in-one`; in Claude Code, start a message with `/rust-in-one`. Other clients' activation commands are in the compatibility guide. Automatic selection depends on the host and prompt; discovery alone does not prove the body or references were read.
+
+For a first run, explicitly select the Skill and give it the task, for example:
+
+```text
+$rust-in-one Build a Rust CLI that summarizes access logs, with JSON output.
+```
+
+Use `/rust-in-one` in place of `$rust-in-one` for Claude Code. Check the client's trace or activity view for the Skill read and any references required by the task. Installation does not make it an always-running plugin.
 
 Example requests:
 
@@ -61,7 +70,9 @@ The skill uses standard frontmatter and relative file links. No particular model
 
 ## Evidence and limitations
 
-Experimental. The [evaluation notes](docs/evaluation.md) identify the frozen skill snapshot used in the reported trials, together with the models, methods, results, and limitations. Later sections record smaller Haiku generation and in-task review trials, plus a separate readability assessment using the authoring model. That assessment was not performed with Haiku or by a human. Results apply only to the named revisions; the review-only workflow has not yet had a behavioral trial. A passing task or favorable review is not evidence of general effectiveness. Earlier Claude results remain [preliminary reports in history](https://github.com/TKY-27/Rust-in-One/blob/3967848af3fe9bbf03d99c06afa2a473deea4a0a/README.md#status), not independently reproduced measurements.
+The [evaluation notes](docs/evaluation.md) record the exact Skill snapshots, models, methods, results, and limitations of the reported trials. Those small trials include improvements, ties, and unresolved failures; they do not establish a general advantage or reliability on large projects. Later Haiku trials include a separate readability assessment by the authoring model, not Haiku or a human. Results belong to the named revisions and do not automatically carry over to the current text. Earlier Claude results remain [preliminary reports in history](https://github.com/TKY-27/Rust-in-One/blob/3967848af3fe9bbf03d99c06afa2a473deea4a0a/README.md#status).
+
+Package validation, installation, native activation, and software quality are separate checks. The [compatibility guide](docs/compatibility.md) states which have been exercised for each host. Instructions cannot guarantee that an agent loads a reference, completes an independent review, or produces correct software; inspect the delivered evidence and remaining gaps.
 
 ## Contributing and validation
 

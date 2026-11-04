@@ -1,6 +1,6 @@
 # Contributing
 
-Rust-in-One is an experimental, portable Agent Skill. Contributions should help an agent deliver better Rust software while keeping the instructions small and usable across hosts.
+Rust-in-One is a portable Agent Skill for delivering maintainable Rust software. Contributions should improve engineering decisions and their verification while keeping the instructions small and usable across hosts.
 
 ## Propose a focused change
 
@@ -32,8 +32,10 @@ State the exact Skill revision, host, model, reasoning setting, task, sample cou
 
 For paired trials, freeze the request and acceptance criteria first, give both conditions the same tools and limits, use fresh isolated contexts, and disclose accidental contamination or repairs to the evaluator. Do not select examples only because the Skill wins. Small demonstrations should be described as examples, not evidence of general effectiveness.
 
+Include brief new-project requests when evaluating autonomous development: a fully specified task already supplies some decisions the Skill is meant to help make. Keep regression tasks and unseen tasks separate, repeat comparisons before claiming an effect, and assess correctness, failure handling, readability, maintenance changes, and resource use together. Test count and code length are not quality scores. Record actual Skill/reference loading and reviewer inputs when available; a final report alone does not establish that the instructions were followed.
+
 ## Before a release
 
-Review the exact commit, require passing validation, check the installation instructions against current primary sources, and keep the evidence limitations accurate. An initial release remains experimental until stronger evidence justifies changing that description. The maintainer chooses the version tag and publication time; CI does not publish automatically. If enabling public vulnerability reporting, confirm that the channel actually works before advertising it.
+Review the exact commit, require passing validation, check the installation instructions against current primary sources, and keep the evidence limitations accurate. Describe supported installation paths and observed behavior precisely; do not treat package validation as proof of better generated software. The maintainer chooses the version tag and publication time; CI does not publish automatically. If enabling public vulnerability reporting, confirm that the channel actually works before advertising it.
 
 Contributions are provided under the repository's [MIT license](LICENSE). Keep the root license and the installed `LICENSE.txt` identical.
