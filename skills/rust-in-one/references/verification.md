@@ -6,7 +6,7 @@ Read the relevant sections while planning substantial work, before designing the
 
 Start with the user's workflow and contract, including the assumptions made from a brief request. Check that the requirements cover a usable result, failure handling, and delivery before deriving tests from them. A checklist copied from the implementation can preserve the same omissions. Reuse existing specifications and checks where they still apply.
 
-For each consequential requirement, choose evidence that would distinguish the intended behavior from a plausible wrong implementation. Use these questions to select cases:
+For each consequential requirement, choose evidence that would distinguish the intended behavior from a plausible wrong implementation. Record the result and its limits beside the requirement it supports; test totals do not measure coverage. Use these questions to select cases:
 
 - **Input:** which valid boundaries, malformed values, encodings, and size limits matter? Check each independently handled field; a boundary test for one field does not establish another's behavior.
 - **Path:** does the check reach the real entry point and the branch that owns the behavior? A successful helper, startup, or help path does not establish the normal processing path's errors or cleanup.
@@ -15,7 +15,7 @@ For each consequential requirement, choose evidence that would distinguish the i
 
 Combine these dimensions where they interact; do not generate their full Cartesian product. For example, a file exporter needs a check that failure during replacement preserves the promised existing data, as well as a successful export. Rejecting an invalid destination before any work starts does not exercise that transition. Use fault injection at the boundary when practical, and identify any gap between an injected unit test and the real installed artifact.
 
-For a central algorithm or state machine, seek an independent expectation: a simple exhaustive solver on bounded inputs, a small reference model, a known result, or a property with a separately derived invariant. Choose a method likely to fail differently from the implementation. Repeating its calculations or merely checking that it does not panic offers little evidence about a wrong result; round trips alone can also preserve a shared encoder/decoder error. A second implementation is unnecessary when direct cases already distinguish the relevant failures.
+For a risky unproven assumption in an algorithm, parser rule, failure transition, or dependency, seek an independent discriminator: a simple exhaustive solver on bounded inputs, a small reference model, a characterized reference behavior, a known result, or a separately derived invariant. Choose a method likely to fail differently from the implementation. Repeating its calculations or merely checking that it does not panic offers little evidence about a wrong result; round trips alone can also preserve a shared encoder/decoder error. A second implementation is unnecessary when direct cases already distinguish the relevant failures.
 
 | Product | Checks that usually matter |
 | --- | --- |
@@ -24,7 +24,7 @@ For a central algorithm or state machine, seek an independent expectation: a sim
 | Service | Real requests to a server bound to `127.0.0.1:0`: malformed and oversized requests, request size limits and timeouts, peers that stop reading responses, recovery of saturated worker capacity, dependency failures, graceful shutdown with in-flight requests, configuration errors at startup |
 | Concurrent code | Shutdown and cancellation paths, error propagation from tasks and threads, bounded queues under load, repeated runs to expose flakiness; `loom` for custom lock-free or atomic protocols that can be modeled with it |
 | Persistence | Interrupted writes (same-filesystem temporary file, flush/sync as required, atomic rename where supported, and parent-directory sync for crash durability on platforms that require it), recovery on restart, behavior when reading files from older or newer versions, and concurrent access (or explicit locking/rejection) when multiple readers or writers can occur |
-| Parsers and decoders of untrusted input | Property tests (`proptest`) for round trips and invariants; fuzzing (`cargo fuzz`, nightly) for crash-freedom; explicit tests for limits on nesting, length, and allocation |
+| Parsers and decoders of untrusted input | Property tests (`proptest`) for round trips and invariants; fuzzing (`cargo fuzz`, nightly) for crash-freedom; explicit nesting, encoded token/line length, decompression, and retained-allocation cases. Exercise valid long encodings as well as rejection; value/count limits alone do not establish bounded memory |
 | Performance requirements | See [performance.md](performance.md) |
 
 ## Commands worth knowing
@@ -43,7 +43,7 @@ cargo tree --duplicates                          # duplicate dependency versions
 
 Use relevant optional tools when available, and follow the project's existing verification requirements. Report a check as run only after actually executing it: `cargo semver-checks` before releasing a library, `cargo audit` or `cargo deny check advisories` for security advisories, `cargo deny check licenses` for license policy, `cargo +nightly miri test` for unsafe code (see [unsafe-ffi.md](unsafe-ffi.md)), `cargo hack --feature-powerset check` for feature combinations, and `cargo msrv verify` or `cargo +<msrv> check` for a declared `rust-version`.
 
-Compiling across feature combinations does not test their behavior. A passing `cargo check` on another target does not show the program works there.
+Compiling across feature combinations does not test their behavior. A passing `cargo check` on another target does not show the program works there. During implementation, run checks for the changed requirement first; verify working slices before building further, with full integration checks at meaningful boundaries and delivery.
 
 ## Test design notes
 
@@ -63,7 +63,7 @@ Use this workflow for a whole-project audit or a review of a diff, commit, or wo
 - Compare the tests with the contract and actual execution paths. Look for a consequential failure the assertions would miss, including failure after progress and independent evidence for central calculations. Explain the missing protection without treating a missing test alone as proof that the implementation is wrong.
 - Preserve the reviewed files and unrelated user changes. Use checking modes rather than automatic formatting or fixes; use a disposable copy for reproducers or commands that may alter tracked files. Run repository code within the host's trust and permission boundaries.
 - Report concrete defects first, ordered by impact. For each, give the location, triggering conditions, violated contract or invariant, consequence, and evidence. Distinguish a reproduced failure from a source-based inference or an unresolved question. For a diff review, distinguish introduced problems from pre-existing ones; do not present speculative performance concerns as measured regressions.
-- Report maintainability concerns separately, with the specific cost of understanding or changing the code. Respect deliberate design and local conventions; function length, file count, and personal stylistic preference alone do not establish a defect.
+- Report maintainability concerns separately. Trace an actual shared concept, such as parsing policy, configuration, domain state, or error mapping, through its definition, callers, adapters, and tests. Identify inconsistent contracts, duplicated rules, unclear ownership, or changes requiring synchronized edits. Use a real subsequent request to assess change cost when available; do not invent features to justify refactoring. Respect deliberate design and conventions; LOC, module or enum counts, and preferred style alone do not establish a defect.
 - Deliver findings and practical correction directions, then the reviewed revision and scope, checks actually run, and remaining gaps. If no actionable findings remain, say so without certifying correctness. Do not invent findings to fill a quota or start repairs unless requested.
 
 ## Independent review
@@ -74,7 +74,7 @@ Give the reviewer:
 - the artifact: repository path and commit, or the diff, plus build and run commands;
 - the risk areas of the product, such as untrusted input, unsafe code, concurrency, and compatibility commitments. These describe the product, not your conclusions about it.
 
-Do not give the reviewer your own verdict, your summary of which tests pass as a reason to trust the code, continuation notes, or a list of areas already checked. Ask the reviewer to compare the contract with the original request and inspect whether the tests would catch consequential wrong behavior, not just whether they pass. Request defects first, then a proportionate maintainability assessment: code whose names, return values, control flow, module boundaries, duplication, or abstractions would make the next change slow or error-prone. Ask for findings in this form:
+Do not give the reviewer your own verdict, your summary of which tests pass as a reason to trust the code, continuation notes, or a list of areas already checked. Ask the reviewer to compare the contract with the original request and inspect whether the tests would catch consequential wrong behavior, not just whether they pass. Request defects first, then the concrete maintenance assessment described under **Review existing code**. Ask for findings in this form:
 
 ```text
 [severity: critical/high/medium/low] [defect|maintainability] <title>
@@ -84,7 +84,7 @@ Evidence: <reproducer, failing input, concrete code path, or the change it would
 Suggested direction: <optional>
 ```
 
-Check each premise before reporting or acting on it. For example, an ignored `fmt::Result` from formatting integers into a `String` is not an ignored I/O error, and `process::exit` called after `run()` returns does not skip destructors that already ran inside `run()`. Maintainability findings are judgments; weigh them against the cost and risk of changing working code, and do not let a restructuring change behavior outside the request. For a confirmed defect, explain how the fix restores the violated requirement or invariant and add a regression check where feasible. Reject false or unsupported findings with a concrete reason; distinguish them from valid findings deferred because of scope or tradeoffs. If you and the reviewer still disagree about a material finding, report both positions to the user. After fixes, rerun checks affected by the change and recheck the integrated artifact. Repeat wider checks when integration risk or repository policy warrants it.
+Check each premise before reporting or acting on it. For example, an ignored `fmt::Result` from formatting integers into a `String` is not an ignored I/O error, and `process::exit` called after `run()` returns does not skip destructors that already ran inside `run()`. Maintainability findings are judgments; weigh them against the cost and risk of changing working code, and do not let a restructuring change behavior outside the request. For a confirmed defect, explain how the fix restores the violated requirement or invariant and add a regression check where feasible. Reject false or unsupported findings with a concrete reason; distinguish them from valid findings deferred because of scope or tradeoffs. If you and the reviewer still disagree about a material finding, report both positions to the user. After fixes, rerun checks for changed behavior and affected shared paths, including previously valid behavior; earlier passes for those paths are stale. Recheck the integrated artifact at a meaningful boundary. Expand or repeat review and testing only for unresolved risks, changed assumptions, or repository requirements. Finish when those obligations are resolved, without numeric quality scores or a prescribed number of review passes.
 
 ## Delivery checks
 

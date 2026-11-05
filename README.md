@@ -1,22 +1,23 @@
 # Rust-in-One
 
-A portable Agent Skill for carrying a Rust request through design, implementation, verification, and delivery.
+A portable Agent Skill for carrying even a brief Rust request through design, implementation, verification, and delivery.
 
 This [Agent Skill](https://agentskills.io/specification) prioritizes new Rust CLIs, libraries, and services, then substantial Rust-native migrations, especially from C/C++. It also supports focused fixes, improvements, and reviews of existing Rust code. The skill instructs agents not to select Rust merely because the skill is installed or apply Rust procedures to unrelated languages.
 
 ## What it provides
 
 - Concrete Rust guidance on ownership, public APIs, byte/text boundaries, arithmetic, errors, output, and dependencies.
-- A complete user workflow and acceptance conditions derived from the request, followed by an early working path through the product's real interface and incremental completion.
+- Intent and completion conditions derived from the request and project context, with routine product and technical decisions handled by the agent.
+- An implementation and verification loop driven by unmet requirements, concrete defects, and important unverified assumptions, keeping implemented work distinct from verified behavior.
 - Verification of input boundaries, actual execution paths, failure after progress, and observable state and output, with independent checks for central algorithms where useful.
 - Readability and maintainability guidance: results and control flow that state their meaning, boundaries by responsibility, reuse of library behavior that matches the contract, and restructuring that preserves observable behavior.
 - For changes to existing projects: tracing the affected architecture and obligations first, extending existing implementations, and checking the impact on unchanged behavior.
 - For reviews of an existing repository or diff: evidence-backed findings, severity and coverage, without changing the reviewed files unless fixes are requested.
-- Migration checks against defined source behavior, including errors, exit statuses, and measured performance.
+- Migration checks against defined source behavior, including errors, exit statuses, and measured performance, separating required compatibility from internal improvements and deliberate behavior changes.
 - A bounded independent review for substantial or materially risky work, covering defects and proportionate maintainability findings, with explicit self-review fallback and honest status reporting.
 - Short private continuation state that is checked against current artifacts after a context reset.
 
-The process scales down for focused fixes. Existing host or companion-skill planning, checks, and reviews can satisfy the workflow without duplication. The goal is a complete, maintainable result from the user's request, with technical decisions handled by the agent and material assumptions made visible.
+The default for implementation requests is to finish the usable result, including checks and corrections, without requiring the user to specify every engineering step. A short prompt does not lower the quality bar. The process scales down for focused fixes and respects requests for planning or review only. Existing host or companion-skill planning, checks, and reviews can satisfy the workflow without duplication. Material assumptions and genuine blockers remain visible.
 
 ## Install
 
@@ -41,7 +42,7 @@ In Codex CLI or the IDE extension, mention `$rust-in-one`; in Claude Code, start
 For a first run, explicitly select the Skill and give it the task, for example:
 
 ```text
-$rust-in-one Build a Rust CLI that summarizes access logs, with JSON output.
+$rust-in-one Make a Rust CLI for finding duplicate files in a folder. Finish it so I can use it.
 ```
 
 Use `/rust-in-one` in place of `$rust-in-one` for Claude Code. Check the client's trace or activity view for the Skill read and any references required by the task. Installation does not make it an always-running plugin.
@@ -61,7 +62,7 @@ The skill uses standard frontmatter and relative file links. No particular model
 
 | File | When needed |
 | --- | --- |
-| [SKILL.md](skills/rust-in-one/SKILL.md) | Activation, scope, engineering defaults, readability, verification, review, recovery |
+| [SKILL.md](skills/rust-in-one/SKILL.md) | Intent, completion conditions, implementation loop, Rust decisions, review, recovery |
 | [verification.md](skills/rust-in-one/references/verification.md) | Planning substantial work, product-specific checks, review and delivery |
 | [migration.md](skills/rust-in-one/references/migration.md) | Before characterizing and designing a migration |
 | [concurrency.md](skills/rust-in-one/references/concurrency.md) | Before services, async, or substantial threading |

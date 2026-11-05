@@ -56,6 +56,18 @@ Check the client's Skill list, explicitly invoke or request `rust-in-one`, and c
 
 For older clients with file access but no native Skills support, ask the agent to read the local `skills/rust-in-one/SKILL.md` and the references required by the task. This is manual use, not native integration. Do not work around a host's permission restrictions.
 
+## Autonomous work across hosts
+
+The Skill guides work from a brief request through implementation, checks, review, and corrections. The host supplies execution and continuation. Reuse its existing task and review facilities; no particular orchestration plugin is required.
+
+| Capability | Use when available | If unavailable |
+| --- | --- | --- |
+| Build and execution tools | Run the applicable Rust checks and exercise the delivered interface | Report the specific unverified requirement; instructions do not make an unexecuted check pass |
+| Private state and continuation | Retain the task contract, next obligation, artifact revision, evidence, and checkpoint location; reconcile them with the files on resume | Preserve a resumable checkpoint where possible and identify the limitation; the package cannot restart a stopped host |
+| Independent review | Give a fresh reviewer the request and artifact, excluding implementer verdicts and continuation notes | Perform a distinct self-review and report the missing independent review accurately |
+
+These are capability requirements, not additional claims of runtime testing for every client. Keep task state outside the delivered product and its repository instruction files. Host-specific automation may help preserve or resume work, but it must respect the host's permissions and the user's task scope. It is not installed by this package.
+
 ## Update or remove
 
 For a Skills CLI installation:
