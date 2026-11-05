@@ -275,3 +275,26 @@ This exposes a compatibility gap missed by initial implementation and review. Th
 ### Limits
 
 There was one completed generation per task, one host, and one platform, with no disabled arm or repeated sampling. The programs were bounded CLIs, not large production migrations. Automatic activation, natural context compaction/resume, services, libraries, Miri, sanitizers, other platforms, and arbitrary sparse requests were not exercised here. Permission-denial probes requiring a lower-privilege child were unavailable in this environment; a chmod-only probe as root was not counted as coverage. The port contains a narrow Linux startup FFI boundary and Linux-specific stdin compatibility behavior; other targets remain unverified. No numeric peak-memory, general speedup, cost-effectiveness, or causal Skill-effect claim is made. Raw artifacts, reports, and checking scripts remain outside this repository in the temporary authoring environment; there is no complete public reproducer for these trials.
+
+## Selected proportionality changes and repeated paired examples (2026-11-05)
+
+Skill commit `9eb25f80eab59fad9156e1a58a0e706e8fb1f186`, package Git tree `5ced0d72454bfe5f36e416343b70fff970ebd651`, changes three existing paragraphs: keep small plans in chat, retain useful tests and usage documentation, and batch independent checks while retaining their results and reusing only current information. Independent instruction review found no material issue. Completion and independent-review requirements remain in place.
+
+Four fresh `gpt-6.1-sol` contexts with high reasoning repeated the previous worklog and weighted-scheduling tasks, once per task and condition. The task descriptions and original C++ source were unchanged. Requests, checking plan, checker and package hashes were frozen before generation. Enabled workers received the explicitly selected package; both conditions had the same tools and one-worker constraint. First delivered sources were preserved without repair, regeneration or reformatting.
+
+| Check | Enabled | Disabled |
+| --- | --- | --- |
+| New CLI: fixed external behavioral cases | 33/33 | 33/33 |
+| New CLI: declared u64 policy checks | 3/3 | 3/3 |
+| New CLI: embedded tests | 12/12 | 16/16 |
+| C++ port: fixed external behavioral cases | 107/107 | 107/107 |
+| C++ port: embedded tests | 10/10 | 7/7 |
+| C++ port: later exploratory nonblocking-input cases | 4/4 | 2/4 |
+
+Before generation, three old new-project checks that assumed an unspecified u64 range were removed from fixed grading. Both delivered programs independently documented u64 limits, so those policies were checked separately. All four artifacts passed standalone production/test compilation under renamed filenames, rustfmt, and Clippy with warnings denied on Linux x86_64 with Rust 1.99.1. The g++ 13.3.0 reference passed all 107 migration checks, including 71 small inputs with independently enumerated optimal answers.
+
+During its own work, the enabled migration worker investigated temporary input-read failures and corrected its implementation before delivery. The evaluator then added four separately labeled nonblocking-stdin probes and applied them to both delivered ports. For the two complete-input cases, the C++ source and enabled port succeeded; the disabled port returned invalid-input status 2. The other two probes matched. These observations are excluded from the frozen 107-case totals. No evaluator finding was returned to a worker for repair.
+
+This is a repeated small-task example, not a measurement of the latest wording changes alone or a general effectiveness result. Test counts are not quality scores. Shared-filesystem boundaries were instructions, not OS isolation. Native activation, independent-review orchestration, large projects and other platforms were not exercised; token/billing telemetry and complete agent execution traces were unavailable.
+
+The five unchanged source files and separate measurement records were delivered as archives outside the repository; they are not permanently hosted here. Source ZIP SHA-256: `655c161ae46d459becd3b533605634f3eddef2c8c6f8060a34ed0fb5d806c781`. Evidence ZIP SHA-256: `87018c9afed595e92dc6f11fa32a513e05ee8be51e8128f5955ce4ea8b93fdb6`. The latter includes task prompts, pre-generation hashes, the original checker, results and the A/B assignment, which was chosen before generation. Human review was pending when this record was written.
